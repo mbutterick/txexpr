@@ -1,4 +1,4 @@
 #lang info
-(define collection "xexpr-shortcuts")
+(define collection "tagged-xexpr")
 
-(define scribblings '(("scribblings/xexpr-shortcuts.scrbl" ())))
+(define scribblings '(("scribblings/tagged-xexpr.scrbl" ())))
