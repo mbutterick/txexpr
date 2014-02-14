@@ -1,4 +1,4 @@
-xexpr-shortcuts
+tagged-xexpr
 ---------------
 
-Convenience functions for working with X-expressions in Racket
+Convenience functions for working with HTML-style tagged X-expressions in Racket
