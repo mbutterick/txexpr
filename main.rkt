@@ -1,6 +1,6 @@
 #lang racket/base
 (require racket/contract racket/match xml racket/list)
-(require pollen/readability)
+(require sugar)
 
 
 (provide (all-defined-out))
