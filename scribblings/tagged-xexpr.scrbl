@@ -3,10 +3,10 @@
 @(require scribble/eval (for-label racket "../main.rkt"))
 
 @(define my-eval (make-base-eval))
-@(my-eval `(require xexpr-shortcuts))
+@(my-eval `(require tagged-xexpr))
 
 
-@title{xexpr-shortcuts}
+@title{tagged-xexpr}
 
 @author[(author+email "Matthew Butterick" "mb@mbtype.com")]
 
@@ -15,22 +15,22 @@ Convenience functions for working with X-expressions in Racket.
 @section{Installation & updates}
 
 At the command line:
-@verbatim{raco pkg install xexpr-shortcuts}
+@verbatim{raco pkg install tagged-xexpr}
 
 After that, you can update the package from the command line:
-@verbatim{raco pkg update xexpr-shortcuts}
+@verbatim{raco pkg update tagged-xexpr}
 
 
 @section{Interface}
 
-@defmodule[xexpr-shortcuts]
+@defmodule[tagged-xexpr]
 
-Hello xexpr-shortcuts.
+Hello tagged-xexpr.
 
 
 @section{License & source code}
 
 This module is licensed under the LGPL.
 
-Source repository at @link["http://github.com/mbutterick/xexpr-shortcuts"]{http://github.com/mbutterick/xexpr-shortcuts}. Suggestions & corrections welcome.
+Source repository at @link["http://github.com/mbutterick/tagged-xexpr"]{http://github.com/mbutterick/tagged-xexpr}. Suggestions & corrections welcome.
 
