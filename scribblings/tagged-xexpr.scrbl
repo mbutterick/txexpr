@@ -123,7 +123,7 @@ boolean?]
 [v any/c])
 boolean?]
 )]
-Shorthand for @code{(listof xexpr-attr?)} and @code{(listof xexpr-element?)}.
+Shorthand for @code{(listof tagged-xexpr-attr?)} and @code{(listof tagged-xexpr-element?)}.
 
 
 @defproc[
