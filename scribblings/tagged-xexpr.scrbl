@@ -70,7 +70,7 @@ If you prefer those, please do. But I've found two benefits to using module func
 
 @bold{Readability.} In code that already has a lot of matching and quasiquoting going on, these functions make it easy to see where & how tagged-xexprs are being used.
 
-@bold{Reliability.} The fact that tagged-xexprs come in two close but not quite equal forms mean that careful coders will always have to take both cases into account.
+@bold{Reliability.} Because tagged-xexprs come in two close but not quite equal forms, careful coders will always have to take both cases into account.
 
 The programming is trivial, but the annoyance is real.
 
