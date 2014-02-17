@@ -1,6 +1,6 @@
 #lang racket/base
 (require racket/contract racket/match xml racket/list)
-(require sugar)
+(require sugar/define sugar/coerce)
 
 
 ;; a tagged-xexpr consists of a tag, optional attributes, and then elements.
@@ -58,7 +58,7 @@
   ;; use flatten to splice xexpr-attrs into list
   ;; use hash to ensure keys are unique (later values will overwrite earlier)
   (define attr-hash (apply hash (make-attr-list (flatten items))))
-  `(,@(map (λ(k) (list k (get attr-hash k))) 
+  `(,@(map (λ(k) (list k (hash-ref attr-hash k))) 
            ;; sort needed for predictable results for unit tests
            (sort (hash-keys attr-hash) (λ(a b) (string<? (->string a) (->string b)))))))
 
