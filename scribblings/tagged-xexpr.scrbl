@@ -129,7 +129,7 @@ Shorthand for @code{(listof tagged-xexpr-attr?)} and @code{(listof tagged-xexpr-
 @defproc[
 (tagged-xexpr->values
 [tx tagged-xexpr?]) 
-(values [tag tagged-xexpr-tag?] [attrs tagged-xexpr-attrs?] [elements tagged-xexpr-elements?])]
+(values tagged-xexpr-tag? tagged-xexpr-attrs? tagged-xexpr-elements?)]
 Dissolves a @racket[_tagged-xexpr] into its components and returns all three.
 
 @examples[#:eval my-eval
