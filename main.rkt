@@ -3,49 +3,32 @@
 (require sugar)
 
 
-(provide (all-defined-out))
+;; a tagged-xexpr consists of a tag, optional attributes, and then elements.
 
-;; is it an xexpr tag?
-(define/contract (xexpr-tag? x)
+(define+provide/contract (xexpr-tag? x)
   (any/c . -> . boolean?)
   (symbol? x)) 
 
-;; is it an xexpr attributes?
-(define/contract (xexpr-attr? x)
+(define+provide/contract (xexpr-attr? x)
   (any/c . -> . boolean?)
   (match x
-    ; list of symbol + string pairs
-    [(list (list (? symbol? key) (? string? value)) ...) #t]
+    [(list (list (? symbol?) (? string?)) ...) #t]
     [else #f]))
 
-
-
-;; is it xexpr content?
-(define/contract (xexpr-element? x)
+(define+provide/contract (xexpr-element? x)
   (any/c . -> . boolean?)
-  (or (string? x) (tagged-xexpr? x)))
+  (or (string? x) (tagged-xexpr? x) (symbol? x)
+      (valid-char? x) (cdata? x)))
 
-;; Not a great idea to use "plural" (i.e. listlike) contracts.
-;; Instead of foobars? use (listof foobar?) as contract
-;; Reason is that listof will show you the specific element that fails
-;; whereas foobars? will just announce the result for the whole list.
-;; Since contracts are intended to tell you why your input is defective,
-;; the (listof foobar?) behavior is better.
-;; outside of contracts, instead of testing (foobars? list),
-;; test (andmap foobar? list)
-
-(define/contract (xexpr-elements? x)
+(define+provide/contract (xexpr-elements? x)
   (any/c . -> . boolean?)
   (match x
-    ;; this is more strict than xexpr definition in xml module
-    ;; don't allow symbols or numbers to be part of content
     [(list elem ...) (andmap xexpr-element? elem)]
     [else #f]))
 
-
 ;; is it a named x-expression?
 ;; todo: rewrite this recurively so errors can be pinpointed (for debugging)
-(define/contract (tagged-xexpr? x)
+(define+provide/contract (tagged-xexpr? x)
   (any/c . -> . boolean?)
   (and (xexpr? x) ; meets basic xexpr contract
        (match x
@@ -60,7 +43,7 @@
 ;; todo: make contract. Which is somewhat complicated:
 ;; list of items, made of xexpr-attr or even numbers of symbol/string pairs
 ;; use splitf*-at with xexpr-attr? as test, then check lengths of resulting lists
-(define/contract (make-xexpr-attr . items)
+(define+provide/contract (make-xexpr-attr . items)
   (() #:rest (listof (λ(i) (or (xexpr-attr? i) (symbol? i) (string? i)))) . ->* . xexpr-attr?)
   
   ;; need this function to make sure that 'foo and "foo" are treated as the same hash key
@@ -80,12 +63,8 @@
            (sort (hash-keys attr-hash) (λ(a b) (string<? (->string a) (->string b)))))))
 
 
-
-
-
-
 ;; create tagged-xexpr from parts (opposite of break-tagged-xexpr)
-(define/contract (make-tagged-xexpr name [attr empty] [content empty])
+(define+provide/contract (make-tagged-xexpr name [attr empty] [content empty])
   ; xexpr/c provides a nicer error message,
   ; but is not sufficient on its own (too permissive)
   ((symbol?) (xexpr-attr? (listof xexpr-element?)) 
@@ -95,40 +74,37 @@
 
 
 ;; decompose tagged-xexpr into parts (opposite of make-tagged-xexpr)
-(define/contract (break-tagged-xexpr nx)
+(define+provide/contract (break-tagged-xexpr x)
   (tagged-xexpr? . -> . 
                  (values symbol? xexpr-attr? (listof xexpr-element?)))
   (match 
       ; tagged-xexpr may or may not have attr
       ; if not, add empty attr so that decomposition only handles one case
-      (match nx
-        [(list _ (? xexpr-attr?) _ ...) nx]
-        [else `(,(car nx) ,empty ,@(cdr nx))])
+      (match x
+        [(list _ (? xexpr-attr?) _ ...) x]
+        [else `(,(car x) ,empty ,@(cdr x))])
     [(list tag attr content ...) (values tag attr content)]))
 
 
 
 ;; convenience functions to retrieve only one part of tagged-xexpr
-(define (tagged-xexpr-tag nx)
+(define+provide/contract (tagged-xexpr-tag x)
   (tagged-xexpr? . -> . xexpr-tag?)
-  (define-values (tag attr content) (break-tagged-xexpr nx))
-  tag)
+  (car x))
 
-(define (tagged-xexpr-attr nx)
+(define+provide/contract (tagged-xexpr-attr x)
   (tagged-xexpr? . -> . xexpr-attr?)
-  (define-values (tag attr content) (break-tagged-xexpr nx))
+  (define-values (tag attr content) (break-tagged-xexpr x))
   attr)
 
-(define (tagged-xexpr-elements nx)
+(define+provide/contract (tagged-xexpr-elements x)
   (tagged-xexpr? . -> . (listof xexpr-element?))
-  (define-values (tag attrt elements) (break-tagged-xexpr nx))
+  (define-values (tag attrt elements) (break-tagged-xexpr x))
   elements)
 
 
-
-
 ;; remove all attr blocks (helper function)
-(define/contract (remove-attrs x)
+(define+provide/contract (remove-attrs x)
   (tagged-xexpr? . -> . tagged-xexpr?)
   (match x
     [(? tagged-xexpr?) (let-values ([(tag attr elements) (break-tagged-xexpr x)])
@@ -136,3 +112,28 @@
     [(? list?) (map remove-attrs x)]
     [else x]))
 
+
+(define+provide/contract (map-xexpr-elements proc x)
+  (procedure? tagged-xexpr? . -> . tagged-xexpr?)
+  (define-values (tag attr elements) (break-tagged-xexpr x)) 
+  (make-tagged-xexpr tag attr (map proc elements)))
+
+
+
+;; function to split tag out of tagged-xexpr
+(define+provide/contract (split-tag-from-xexpr tag tx)
+  (xexpr-tag? tagged-xexpr? . -> . (values (listof xexpr-element?) tagged-xexpr? ))
+  (define matches '())
+  (define (extract-tag x)
+    (cond
+      [(and (tagged-xexpr? x) (equal? tag (car x)))
+       ; stash matched tag but return empty value
+       (begin
+         (set! matches (cons x matches))
+         empty)]
+      [(tagged-xexpr? x) (let-values([(tag attr body) (break-tagged-xexpr x)]) 
+                           (make-tagged-xexpr tag attr (extract-tag body)))]
+      [(xexpr-elements? x) (filter-not empty? (map extract-tag x))]
+      [else x]))
+  (define tx-extracted (extract-tag tx)) ;; do this first to fill matches
+  (values (reverse matches) tx-extracted)) 
