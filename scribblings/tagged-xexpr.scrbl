@@ -195,8 +195,9 @@ Assemble a @racket[_tagged-xexpr] from its parts. If you don't have attributes, 
 
 @defproc[
 (merge-attrs
-[attrs (listof (or/c tagged-xexpr-attr? tagged-xexpr-attrs? symbol? string?))] ...)
-xexpr-attrs?]
+[attrs (listof (or/c tagged-xexpr-attr? tagged-xexpr-attrs? 
+symbol? string?))] ...)
+tagged-xexpr-attrs?]
 Combine a series of attributes into a single @racket[_tagged-xexpr-attrs] item. This function addresses three annoyances that surface in working with tagged-xexpr attributes. 
 
 @itemlist[#:style 'ordered
