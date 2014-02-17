@@ -181,7 +181,7 @@ Accessor functions for the individual pieces of a @racket[_tagged-xexpr].
 [attrs xexpr-attrs? @(empty)]
 [elements xexpr-elements? @(empty)])
 tagged-xexpr?]
-Assemble a @racket[_tagged-xexpr] from its parts. If you don't need attributes, but you do have elements, you'll need to pass @racket[empty] as the second argument. Note that unlike @racket[xml->xexpr], if the attribute list is empty, it's not included in the resulting expression.
+Assemble a @racket[_tagged-xexpr] from its parts. If you don't have attributes, but you do have elements, you'll need to pass @racket[empty] as the second argument. Note that unlike @racket[xml->xexpr], if the attribute list is empty, it's not included in the resulting expression.
 
 @examples[#:eval my-eval
 (make-tagged-xexpr 'div)
