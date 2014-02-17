@@ -14,32 +14,32 @@
 
 ;; a tagged-xexpr consists of a tag, optional attributes, and then elements.
 
-(define+provide/contract (xexpr-tag? x)
+(define+provide/contract (tagged-xexpr-tag? x)
   (any/c . -> . boolean?)
   (symbol? x)) 
 
 
-(define+provide/contract (xexpr-attr? x)
+(define+provide/contract (tagged-xexpr-attr? x)
   (any/c . -> . boolean?)
   (match x
     [(list (? symbol?) (? string?)) #t]
     [else #f]))
 
-(define+provide/contract (xexpr-attrs? x)
+(define+provide/contract (tagged-xexpr-attrs? x)
   (any/c . -> . boolean?)
   (match x
-    [(list (? xexpr-attr?) ...) #t]
+    [(list (? tagged-xexpr-attr?) ...) #t]
     [else #f]))
 
-(define+provide/contract (xexpr-element? x)
+(define+provide/contract (tagged-xexpr-element? x)
   (any/c . -> . boolean?)
   (or (string? x) (tagged-xexpr? x) (symbol? x)
       (valid-char? x) (cdata? x)))
 
-(define+provide/contract (xexpr-elements? x)
+(define+provide/contract (tagged-xexpr-elements? x)
   (any/c . -> . boolean?)
   (match x
-    [(list elem ...) (andmap xexpr-element? elem)]
+    [(list elem ...) (andmap tagged-xexpr-element? elem)]
     [else #f]))
 
 ;; is it a named x-expression?
@@ -49,8 +49,8 @@
   (and (xexpr? x) ; meets basic xexpr contract
        (match x
          [(list (? symbol? name) rest ...) ; is a list starting with a symbol
-          (or (andmap xexpr-element? rest) ; the rest is content or ...
-              (and (xexpr-attrs? (car rest)) (andmap xexpr-element? (cdr rest))))] ; attr + content 
+          (or (andmap tagged-xexpr-element? rest) ; the rest is content or ...
+              (and (tagged-xexpr-attrs? (car rest)) (andmap tagged-xexpr-element? (cdr rest))))] ; attr + content 
          [else #f])))
 
 
@@ -60,7 +60,7 @@
 (define+provide/contract (make-tagged-xexpr tag [attrs empty] [elements empty])
   ; xexpr/c provides a nicer error message,
   ; but is not sufficient on its own (too permissive)
-  ((symbol?) (xexpr-attrs? (listof xexpr-element?)) 
+  ((symbol?) (tagged-xexpr-attrs? (listof tagged-xexpr-element?)) 
              . ->* . tagged-xexpr?)
   (filter-not empty? `(,tag ,attrs ,@elements)))
 
@@ -69,12 +69,12 @@
 ;; decompose tagged-xexpr into parts (opposite of make-tagged-xexpr)
 (define+provide/contract (tagged-xexpr->values x)
   (tagged-xexpr? . -> . 
-                 (values symbol? xexpr-attrs? (listof xexpr-element?)))
+                 (values symbol? tagged-xexpr-attrs? (listof tagged-xexpr-element?)))
   (match 
       ; tagged-xexpr may or may not have attr
       ; if not, add empty attr so that decomposition only handles one case
       (match x
-        [(list _ (? xexpr-attrs?) _ ...) x]
+        [(list _ (? tagged-xexpr-attrs?) _ ...) x]
         [else `(,(car x) ,empty ,@(cdr x))])
     [(list tag attr content ...) (values tag attr content)]))
 
@@ -86,16 +86,16 @@
 
 ;; convenience functions to retrieve only one part of tagged-xexpr
 (define+provide/contract (tagged-xexpr-tag x)
-  (tagged-xexpr? . -> . xexpr-tag?)
+  (tagged-xexpr? . -> . tagged-xexpr-tag?)
   (car x))
 
 (define+provide/contract (tagged-xexpr-attrs x)
-  (tagged-xexpr? . -> . xexpr-attrs?)
+  (tagged-xexpr? . -> . tagged-xexpr-attrs?)
   (define-values (tag attrs content) (tagged-xexpr->values x))
   attrs)
 
 (define+provide/contract (tagged-xexpr-elements x)
-  (tagged-xexpr? . -> . (listof xexpr-element?))
+  (tagged-xexpr? . -> . (listof tagged-xexpr-element?))
   (define-values (tag attrs elements) (tagged-xexpr->values x))
   elements)
 
@@ -110,8 +110,8 @@
 ;; todo: make contract. Which is somewhat complicated:
 ;; list of items, made of xexpr-attrs or even numbers of symbol/string pairs
 ;; use splitf*-at with xexpr-attrs? as test, then check lengths of resulting lists
-(define+provide/contract (merge-xexpr-attrs . items)
-  (() #:rest (listof (or/c xexpr-attr? xexpr-attrs? symbol? string?)) . ->* . xexpr-attrs?)
+(define+provide/contract (merge-attrs . items)
+  (() #:rest (listof (or/c tagged-xexpr-attr? tagged-xexpr-attrs? symbol? string?)) . ->* . tagged-xexpr-attrs?)
   
   ;; need this function to make sure that 'foo and "foo" are treated as the same hash key
   (define (make-attr-list items)

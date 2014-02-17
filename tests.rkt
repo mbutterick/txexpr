@@ -7,20 +7,20 @@
 (define-syntax-rule (values->list vs)
   (call-with-values (λ() vs) list))
 
-(check-true (xexpr-attrs? '()))
-(check-true (xexpr-attrs? '((key "value"))))
-(check-true (xexpr-attrs? '((key "value") (foo "bar"))))
-(check-false (xexpr-attrs? '((key "value") "foo" "bar"))) ; content, not attr
-(check-false (xexpr-attrs? '(key "value"))) ; not a nested list
-(check-false (xexpr-attrs? '(("key" "value")))) ; two strings
-(check-false (xexpr-attrs? '((key value)))) ; two symbols
+(check-true (tagged-xexpr-attrs? '()))
+(check-true (tagged-xexpr-attrs? '((key "value"))))
+(check-true (tagged-xexpr-attrs? '((key "value") (foo "bar"))))
+(check-false (tagged-xexpr-attrs? '((key "value") "foo" "bar"))) ; content, not attr
+(check-false (tagged-xexpr-attrs? '(key "value"))) ; not a nested list
+(check-false (tagged-xexpr-attrs? '(("key" "value")))) ; two strings
+(check-false (tagged-xexpr-attrs? '((key value)))) ; two symbols
 
-(check-true (xexpr-elements? '("p" "foo" "123")))
-(check-true (xexpr-elements? '("p" "foo" 123))) ; includes number
-(check-true (xexpr-elements? '(p "foo" "123"))) ; includes symbol
-(check-false (xexpr-elements? "foo")) ; not a list
-(check-false (xexpr-elements? '(((key "value")) "foo" "bar"))) ; includes attr
-(check-false (xexpr-elements? '("foo" "bar" ((key "value"))))) ; malformed
+(check-true (tagged-xexpr-elements? '("p" "foo" "123")))
+(check-true (tagged-xexpr-elements? '("p" "foo" 123))) ; includes number
+(check-true (tagged-xexpr-elements? '(p "foo" "123"))) ; includes symbol
+(check-false (tagged-xexpr-elements? "foo")) ; not a list
+(check-false (tagged-xexpr-elements? '(((key "value")) "foo" "bar"))) ; includes attr
+(check-false (tagged-xexpr-elements? '("foo" "bar" ((key "value"))))) ; malformed
 
 
 (check-true (tagged-xexpr? '(p "foo" "bar")))
@@ -30,14 +30,14 @@
 (check-false (tagged-xexpr? '(p "foo" "bar" ((key "value"))))) ; malformed
 (check-false (tagged-xexpr? '("p" "foo" "bar"))) ; no name
 
-(check-equal? (merge-xexpr-attrs 'foo "bar") '((foo "bar")))
-(check-equal? (merge-xexpr-attrs '(foo "bar")) '((foo "bar")))
-(check-equal? (merge-xexpr-attrs '((foo "bar"))) '((foo "bar")))
-(check-equal? (merge-xexpr-attrs "foo" 'bar) '((foo "bar")))
-(check-equal? (merge-xexpr-attrs "foo" "bar" "goo" "gar") '((foo "bar")(goo "gar")))
-(check-equal? (merge-xexpr-attrs (merge-xexpr-attrs "foo" "bar" "goo" "gar") "hee" "haw") 
+(check-equal? (merge-attrs 'foo "bar") '((foo "bar")))
+(check-equal? (merge-attrs '(foo "bar")) '((foo "bar")))
+(check-equal? (merge-attrs '((foo "bar"))) '((foo "bar")))
+(check-equal? (merge-attrs "foo" 'bar) '((foo "bar")))
+(check-equal? (merge-attrs "foo" "bar" "goo" "gar") '((foo "bar")(goo "gar")))
+(check-equal? (merge-attrs (merge-attrs "foo" "bar" "goo" "gar") "hee" "haw") 
               '((foo "bar")(goo "gar")(hee "haw")))
-(check-equal? (merge-xexpr-attrs '((foo "bar")(goo "gar")) "foo" "haw") '((foo "haw")(goo "gar")))
+(check-equal? (merge-attrs '((foo "bar")(goo "gar")) "foo" "haw") '((foo "haw")(goo "gar")))
 
 
 (check-equal? (make-tagged-xexpr 'p) '(p))

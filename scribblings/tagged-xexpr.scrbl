@@ -85,17 +85,17 @@ The programming is trivial, but the annoyance is real.
 boolean?]
 
 @defproc[
-(xexpr-tag?
+(tagged-xexpr-tag?
 [v any/c])
 boolean?]
 
 @defproc[
-(xexpr-attr?
+(tagged-xexpr-attr?
 [v any/c])
 boolean?]
 
 @defproc[
-(xexpr-element?
+(tagged-xexpr-element?
 [v any/c])
 boolean?]
 
@@ -114,12 +114,12 @@ Predicates for @racket[_tagged-xexpr]s that implement this grammar:
 @deftogether[(
 
 @defproc[
-(xexpr-attrs?
+(tagged-xexpr-attrs?
 [v any/c])
 boolean?]
 
 @defproc[
-(xexpr-elements?
+(tagged-xexpr-elements?
 [v any/c])
 boolean?]
 )]
@@ -129,7 +129,7 @@ Shorthand for @code{(listof xexpr-attr?)} and @code{(listof xexpr-element?)}.
 @defproc[
 (tagged-xexpr->values
 [tx tagged-xexpr?]) 
-(values [tag xexpr-tag?] [attrs xexpr-attrs?] [elements xexpr-elements?])]
+(values [tag tagged-xexpr-tag?] [attrs tagged-xexpr-attrs?] [elements tagged-xexpr-elements?])]
 Dissolves a @racket[_tagged-xexpr] into its components and returns all three.
 
 @examples[#:eval my-eval
@@ -155,17 +155,17 @@ Like @racket[tagged-xexpr->values], but returns the three components in a list.
 @defproc[
 (tagged-xexpr-tag
 [tx tagged-xexpr?])
-xexpr-tag?]
+tagged-xexpr-tag?]
 
 @defproc[
 (tagged-xexpr-attrs
 [tx tagged-xexpr?])
-xexpr-attr?]
+tagged-xexpr-attr?]
 
 @defproc[
 (tagged-xexpr-elements
 [tx tagged-xexpr?])
-(listof xexpr-element?)]
+(listof tagged-xexpr-element?)]
 )]
 Accessor functions for the individual pieces of a @racket[_tagged-xexpr].
 
@@ -177,9 +177,9 @@ Accessor functions for the individual pieces of a @racket[_tagged-xexpr].
 
 @defproc[
 (make-tagged-xexpr
-[tag symbol?] 
-[attrs xexpr-attrs? @(empty)]
-[elements xexpr-elements? @(empty)])
+[tag tagged-xexpr-tag?] 
+[attrs tagged-xexpr-attrs? @(empty)]
+[elements tagged-xexpr-elements? @(empty)])
 tagged-xexpr?]
 Assemble a @racket[_tagged-xexpr] from its parts. If you don't have attributes, but you do have elements, you'll need to pass @racket[empty] as the second argument. Note that unlike @racket[xml->xexpr], if the attribute list is empty, it's not included in the resulting expression.
 
@@ -194,8 +194,8 @@ Assemble a @racket[_tagged-xexpr] from its parts. If you don't have attributes, 
 ]
 
 @defproc[
-(merge-xexpr-attrs
-[attrs (listof (or/c xexpr-attr? xexpr-attrs? symbol? string?))] ...)
+(merge-attrs
+[attrs (listof (or/c tagged-xexpr-attr? tagged-xexpr-attrs? symbol? string?))] ...)
 xexpr-attrs?]
 Combine a series of attributes into a single @racket[_tagged-xexpr-attrs] item. This function addresses three annoyances that surface in working with tagged-xexpr attributes. 
 
@@ -210,11 +210,11 @@ Combine a series of attributes into a single @racket[_tagged-xexpr-attrs] item. 
 (define tx '(div [[id "top"][class "red"]] "Hello" (p "World")))
 (define tx-attrs (tagged-xexpr-attrs tx))
 tx-attrs
-(merge-xexpr-attrs tx-attrs 'editable "true")
-(merge-xexpr-attrs tx-attrs 'id "override-value")
+(merge-attrs tx-attrs 'editable "true")
+(merge-attrs tx-attrs 'id "override-value")
 (define my-attr '(id "another-override"))
-(merge-xexpr-attrs tx-attrs my-attr)
-(merge-xexpr-attrs my-attr tx-attrs)
+(merge-attrs tx-attrs my-attr)
+(merge-attrs my-attr tx-attrs)
 ]
 
 @defproc[
