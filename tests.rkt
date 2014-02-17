@@ -30,7 +30,6 @@
 (check-false (tagged-xexpr? '(p "foo" "bar" ((key "value"))))) ; malformed
 (check-false (tagged-xexpr? '("p" "foo" "bar"))) ; no name
 
-
 (check-equal? (make-xexpr-attr 'foo "bar") '((foo "bar")))
 (check-equal? (make-xexpr-attr "foo" 'bar) '((foo "bar")))
 (check-equal? (make-xexpr-attr "foo" "bar" "goo" "gar") '((foo "bar")(goo "gar")))
