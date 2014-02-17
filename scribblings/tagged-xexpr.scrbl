@@ -242,7 +242,7 @@ Recursively apply @racket[_proc] to all elements, leaving tags and attributes al
 (map-elements upcaser tx)
 ]
 
-In practice, most @racket[_xexpr-element]s are strings. But woe befalls those who pass string procedures to @racket[map-element], because an @racket[_xexpr-element] can be any kind of @racket[xexpr?], and an @racket[xexpr?] is not necessarily a string.
+In practice, most @racket[_xexpr-element]s are strings. But woe befalls those who pass string procedures to @racket[map-elements], because an @racket[_xexpr-element] can be any kind of @racket[xexpr?], and an @racket[xexpr?] is not necessarily a string.
 
 @examples[#:eval my-eval
 (define tx '(p "Welcome to" (strong "Mars" amp "Sons")))
