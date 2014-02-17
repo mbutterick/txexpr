@@ -142,7 +142,8 @@ Dissolves a @racket[_tagged-xexpr] into its components and returns all three.
 @defproc[
 (tagged-xexpr->list
 [tx tagged-xexpr?]) 
-(list tagged-xexpr-tag? tagged-xexpr-attrs? 
+(list tagged-xexpr-tag? 
+tagged-xexpr-attrs? 
 tagged-xexpr-elements?)]
 Like @racket[tagged-xexpr->values], but returns the three components in a list.
 
