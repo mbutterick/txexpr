@@ -180,8 +180,8 @@ Accessor functions for the individual pieces of a @racket[_tagged-xexpr].
 @defproc[
 (make-tagged-xexpr
 [tag tagged-xexpr-tag?] 
-[attrs tagged-xexpr-attrs? @(empty)]
-[elements tagged-xexpr-elements? @(empty)])
+[attrs tagged-xexpr-attrs? @empty]
+[elements tagged-xexpr-elements? @empty])
 tagged-xexpr?]
 Assemble a @racket[_tagged-xexpr] from its parts. If you don't have attributes, but you do have elements, you'll need to pass @racket[empty] as the second argument. Note that unlike @racket[xml->xexpr], if the attribute list is empty, it's not included in the resulting expression.
 
