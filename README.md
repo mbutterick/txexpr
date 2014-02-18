@@ -10,3 +10,5 @@ Install from the command line like so:
 Then require it in your Racket file:
 
     (require tagged-xexpr)
+
+Full docs are installed with the package.
