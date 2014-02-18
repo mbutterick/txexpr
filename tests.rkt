@@ -77,8 +77,3 @@
                                   '(p "foo" "bar" (em "square"))) 
               '(p "boing" "boing" (em "boing")))
 
-(require hyphenate sugar/debug)
-(check-equal? (map-elements hyphenate '(p "foobar" (em "snowman")) (λ(tx) (not (equal? (car tx) 'em)))) '(p "foo\u00ADbar" (em "snowman")))
-
-
-

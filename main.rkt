@@ -1,6 +1,6 @@
 #lang racket/base
 (require (for-syntax racket/base))
-(require racket/contract racket/match xml racket/list sugar/debug)
+(require racket/contract racket/match xml racket/list)
 
 (define-syntax (define+provide/contract stx)
   (syntax-case stx ()
@@ -137,17 +137,14 @@
     [else x]))
 
 
-(define+provide/contract (map-elements proc x [filter-proc (λ(x) #t)])
-  ((procedure? tagged-xexpr?) (procedure?) . ->* . tagged-xexpr?)
-  (cond
-    [(tagged-xexpr? x) 
-     (if (filter-proc x)
-         (let-values ([(tag attr elements) (tagged-xexpr->values x)])
-           (make-tagged-xexpr tag attr 
-                              (map (λ(x)(map-elements proc x filter-proc)) elements)))
-         x)]
-    ;; externally the function only accepts tagged-xexpr,
-    ;; but internally we don't care
-    [else (proc x)]))
+(define+provide/contract (map-elements proc x)
+  (procedure? tagged-xexpr? . -> . tagged-xexpr?)
+  (define-values (tag attr elements) (tagged-xexpr->values x)) 
+  (define recursive-proc
+    (λ(x) 
+      (cond
+        [(tagged-xexpr? x) (map-elements proc x)]
+        [else (proc x)])))
+  (make-tagged-xexpr tag attr (map recursive-proc elements)))
 
 
