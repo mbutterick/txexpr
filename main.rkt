@@ -48,25 +48,22 @@
   (any/c . -> . boolean?)
   (and (xexpr? x) ; meets basic xexpr contract
        (match x
-         [(list (? symbol? name) rest ...) ; is a list starting with a symbol
-          (or (andmap tagged-xexpr-element? rest) ; the rest is content or ...
-              (and (tagged-xexpr-attrs? (car rest)) (andmap tagged-xexpr-element? (cdr rest))))] ; attr + content 
+         ;; is a list starting with a symbol
+         [(list (? symbol? name) rest ...) 
+          ;; the rest is content or ...
+          (or (andmap tagged-xexpr-element? rest) 
+              ;; attr + content 
+              (and (tagged-xexpr-attrs? (car rest)) (andmap tagged-xexpr-element? (cdr rest))))] 
          [else #f])))
 
 
-
-
-;; create tagged-xexpr from parts (opposite of break-tagged-xexpr)
 (define+provide/contract (make-tagged-xexpr tag [attrs empty] [elements empty])
-  ; xexpr/c provides a nicer error message,
-  ; but is not sufficient on its own (too permissive)
+  ;; todo?: use xexpr/c provides a nicer error message
   ((symbol?) (tagged-xexpr-attrs? (listof tagged-xexpr-element?)) 
              . ->* . tagged-xexpr?)
   (filter-not empty? `(,tag ,attrs ,@elements)))
 
 
-
-;; decompose tagged-xexpr into parts (opposite of make-tagged-xexpr)
 (define+provide/contract (tagged-xexpr->values x)
   (tagged-xexpr? . -> . 
                  (values symbol? tagged-xexpr-attrs? (listof tagged-xexpr-element?)))
@@ -84,32 +81,34 @@
   (define-values (tag attrs content) (tagged-xexpr->values x))
   (list tag attrs content))
 
+
 ;; convenience functions to retrieve only one part of tagged-xexpr
 (define+provide/contract (tagged-xexpr-tag x)
   (tagged-xexpr? . -> . tagged-xexpr-tag?)
   (car x))
+
 
 (define+provide/contract (tagged-xexpr-attrs x)
   (tagged-xexpr? . -> . tagged-xexpr-attrs?)
   (define-values (tag attrs content) (tagged-xexpr->values x))
   attrs)
 
+
 (define+provide/contract (tagged-xexpr-elements x)
   (tagged-xexpr? . -> . (listof tagged-xexpr-element?))
   (define-values (tag attrs elements) (tagged-xexpr->values x))
   elements)
 
-;; we are getting a string or symbol
+
+;; helpers. we are getting a string or symbol
 (define (->symbol x)
   (if (string? x) (string->symbol x) x))
+
 (define (->string x)
   (if (symbol? x) (symbol->string x) x))
 
 
 ;; convert list of alternating keys & values to attr
-;; todo: make contract. Which is somewhat complicated:
-;; list of items, made of xexpr-attrs or even numbers of symbol/string pairs
-;; use splitf*-at with xexpr-attrs? as test, then check lengths of resulting lists
 (define+provide/contract (merge-attrs . items)
   (() #:rest (listof (or/c tagged-xexpr-attr? tagged-xexpr-attrs? symbol? string?)) . ->* . tagged-xexpr-attrs?)
   
@@ -122,7 +121,6 @@
               [rest (drop items 2)])
           (append (list key value) (make-attr-list rest)))))
   
-  ;; use flatten to splice xexpr-attrs into list
   ;; use hash to ensure keys are unique (later values will overwrite earlier)
   (define attr-hash (apply hash (make-attr-list (flatten items))))
   `(,@(map (λ(k) (list k (hash-ref attr-hash k))) 
@@ -130,7 +128,6 @@
            (sort (hash-keys attr-hash) (λ(a b) (string<? (->string a) (->string b)))))))
 
 
-;; remove all attr blocks (helper function)
 (define+provide/contract (remove-attrs x)
   (tagged-xexpr? . -> . tagged-xexpr?)
   (match x
