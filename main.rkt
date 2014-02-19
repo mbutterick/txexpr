@@ -119,7 +119,7 @@
   (any/c . -> . boolean?)
   (can-be-txexpr-attr-key? x))
 
-(define+provide/contract (->string x) 
+(define (->string x) 
   (any/c . -> . string?)
   (if (symbol? x) (symbol->string x) x))
 
