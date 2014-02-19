@@ -1,34 +1,94 @@
 #lang racket/base
+(require (for-syntax racket/base))
 (require "main.rkt" rackunit)
+
+(define-syntax (values->list stx)
+  (syntax-case stx ()
+    [(_ values-expr) #'(call-with-values (λ () values-expr) list)]))
+
 (define empty '())
 
-;; helper for comparison of values
-;; normal function won't work for this. Has to be syntax-rule
-(define-syntax-rule (values->list vs)
-  (call-with-values (λ() vs) list))
+(check-true (txexpr-tag?'foo))
+(check-false (txexpr-tag? "foo"))
+(check-false (txexpr-tag? 3))
 
-(check-true (tagged-xexpr-attrs? '()))
-(check-true (tagged-xexpr-attrs? '((key "value"))))
-(check-true (tagged-xexpr-attrs? '((key "value") (foo "bar"))))
-(check-false (tagged-xexpr-attrs? '((key "value") "foo" "bar"))) ; content, not attr
-(check-false (tagged-xexpr-attrs? '(key "value"))) ; not a nested list
-(check-false (tagged-xexpr-attrs? '(("key" "value")))) ; two strings
-(check-false (tagged-xexpr-attrs? '((key value)))) ; two symbols
+(check-true (txexpr-attr? '(key "value")))
+(check-false (txexpr-attr? '(key "value" "another")))
+(check-false (txexpr-attr? '(key 0 "value")))
 
-(check-true (tagged-xexpr-elements? '("p" "foo" "123")))
-(check-true (tagged-xexpr-elements? '("p" "foo" 123))) ; includes number
-(check-true (tagged-xexpr-elements? '(p "foo" "123"))) ; includes symbol
-(check-false (tagged-xexpr-elements? "foo")) ; not a list
-(check-false (tagged-xexpr-elements? '(((key "value")) "foo" "bar"))) ; includes attr
-(check-false (tagged-xexpr-elements? '("foo" "bar" ((key "value"))))) ; malformed
+(check-true (txexpr-attrs? '()))
+(check-true (txexpr-attrs? '((key "value"))))
+(check-true (txexpr-attrs? '((key "value") (foo "bar"))))
+(check-false (txexpr-attrs? '((key "value") "foo" "bar"))) ; content, not attr
+(check-false (txexpr-attrs? '(key "value"))) ; not a nested list
+(check-false (txexpr-attrs? '(("key" "value")))) ; two strings
+(check-false (txexpr-attrs? '((key value)))) ; two symbols
+
+(check-true (txexpr-element? "string"))
+(check-true (txexpr-element? 'amp))
+(check-true (txexpr-element? '(p "string")))
+(check-true (txexpr-element? 65)) ;; a valid-char
+(check-false (txexpr-element? 0)) ;; not a valid-char
+
+(check-true (txexpr-elements? '("p" "foo" "123")))
+(check-true (txexpr-elements? '("p" "foo" 123))) ; includes number
+(check-true (txexpr-elements? '(p "foo" "123"))) ; includes symbol
+(check-false (txexpr-elements? "foo")) ; not a list
+(check-false (txexpr-elements? '(((key "value")) "foo" "bar"))) ; includes attr
+(check-false (txexpr-elements? '("foo" "bar" ((key "value"))))) ; malformed
+
+(check-true (txexpr? '(p)))
+(check-true (txexpr? '(p "foo" "bar")))
+(check-true (txexpr? '(p ((key "value")) "foo" "bar")))
+(check-true (txexpr? '(p 123))) ; content is a number
+(check-false (txexpr? "foo")) ; not a list with symbol
+(check-false (txexpr? '(p "foo" "bar" ((key "value"))))) ; malformed
+(check-false (txexpr? '("p" "foo" "bar"))) ; no name
+
+(check-equal? (make-txexpr 'p) '(p))
+(check-equal? (make-txexpr 'p '((key "value"))) '(p ((key "value"))))
+(check-equal? (make-txexpr 'p empty '("foo" "bar")) '(p "foo" "bar"))
+(check-equal? (make-txexpr 'p '((key "value")) (list "foo" "bar")) 
+              '(p ((key "value")) "foo" "bar"))
+
+(check-equal? (values->list (txexpr->values '(p))) 
+              (values->list (values 'p empty empty)))
+(check-equal? (values->list (txexpr->values '(p "foo"))) 
+              (values->list (values 'p empty '("foo"))))
+(check-equal? (values->list (txexpr->values '(p ((key "value"))))) 
+              (values->list (values 'p '((key "value")) empty)))
+(check-equal? (values->list (txexpr->values '(p ((key "value")) "foo"))) 
+              (values->list (values 'p '((key "value")) '("foo"))))
+
+(check-equal? (values->list (txexpr->values '(p))) 
+              (txexpr->list '(p)))
+(check-equal? (values->list (txexpr->values '(p "foo"))) 
+              (txexpr->list '(p "foo")))
+(check-equal? (values->list (txexpr->values '(p ((key "value"))))) 
+              (txexpr->list '(p ((key "value")))))
+(check-equal? (values->list (txexpr->values '(p ((key "value")) "foo"))) 
+              (txexpr->list '(p ((key "value")) "foo")))
+
+(check-equal? (get-tag '(p ((key "value"))"foo" "bar" (em "square"))) 'p)
+(check-equal? (get-attrs '(p ((key "value"))"foo" "bar" (em "square"))) '((key "value")))
+(check-equal? (get-elements '(p ((key "value"))"foo" "bar" (em "square"))) 
+              '("foo" "bar" (em "square")))
 
 
-(check-true (tagged-xexpr? '(p "foo" "bar")))
-(check-true (tagged-xexpr? '(p ((key "value")) "foo" "bar")))
-(check-true (tagged-xexpr? '(p 123))) ; content is a number
-(check-false (tagged-xexpr? "foo")) ; not a list with symbol
-(check-false (tagged-xexpr? '(p "foo" "bar" ((key "value"))))) ; malformed
-(check-false (tagged-xexpr? '("p" "foo" "bar"))) ; no name
+(check-equal? (->txexpr-attr-key "foo") 'foo)
+(check-equal? (->txexpr-attr-key 'foo) 'foo)
+
+(check-equal? (->txexpr-attr-value "foo") "foo")
+(check-equal? (->txexpr-attr-value 'foo) "foo")
+
+(check-equal? (attrs->hash '((foo "bar"))) '#hash((foo . "bar")))
+(check-equal? (attrs->hash '((foo "bar")) '(foo "fraw")) '#hash((foo . "fraw")))
+(check-equal? (attrs->hash '((foo "bar")) '(foo "fraw") 'foo "dog") '#hash((foo . "dog")))
+
+(check-equal? (hash->attrs '#hash((foo . "bar")(hee . "haw"))) '((foo "bar")(hee "haw")))
+
+(check-equal? (attr-ref '(p ((foo "bar"))) 'foo) "bar")
+(check-equal? (attr-set '(p ((foo "bar"))) 'foo "fraw") '(p ((foo "fraw"))))
 
 (check-equal? (merge-attrs 'foo "bar") '((foo "bar")))
 (check-equal? (merge-attrs '(foo "bar")) '((foo "bar")))
@@ -40,40 +100,14 @@
 (check-equal? (merge-attrs '((foo "bar")(goo "gar")) "foo" "haw") '((foo "haw")(goo "gar")))
 
 
-(check-equal? (make-tagged-xexpr 'p) '(p))
-(check-equal? (make-tagged-xexpr 'p '((key "value"))) '(p ((key "value"))))
-(check-equal? (make-tagged-xexpr 'p empty '("foo" "bar")) '(p "foo" "bar"))
-(check-equal? (make-tagged-xexpr 'p '((key "value")) (list "foo" "bar")) 
-              '(p ((key "value")) "foo" "bar"))
-
-(check-equal? (values->list (tagged-xexpr->values '(p))) 
-              (values->list (values 'p empty empty)))
-(check-equal? (values->list (tagged-xexpr->values '(p "foo"))) 
-              (values->list (values 'p empty '("foo"))))
-(check-equal? (values->list (tagged-xexpr->values '(p ((key "value"))))) 
-              (values->list (values 'p '((key "value")) empty)))
-(check-equal? (values->list (tagged-xexpr->values '(p ((key "value")) "foo"))) 
-              (values->list (values 'p '((key "value")) '("foo"))))
-
-
-(check-equal? (values->list (tagged-xexpr->values '(p))) 
-              (tagged-xexpr->list '(p)))
-(check-equal? (values->list (tagged-xexpr->values '(p "foo"))) 
-              (tagged-xexpr->list '(p "foo")))
-(check-equal? (values->list (tagged-xexpr->values '(p ((key "value"))))) 
-              (tagged-xexpr->list '(p ((key "value")))))
-(check-equal? (values->list (tagged-xexpr->values '(p ((key "value")) "foo"))) 
-              (tagged-xexpr->list '(p ((key "value")) "foo")))
-
-(check-equal? (tagged-xexpr-tag '(p ((key "value"))"foo" "bar" (em "square"))) 'p)
-(check-equal? (tagged-xexpr-attrs '(p ((key "value"))"foo" "bar" (em "square"))) '((key "value")))
-(check-equal? (tagged-xexpr-elements '(p ((key "value"))"foo" "bar" (em "square"))) 
-              '("foo" "bar" (em "square")))
-
 (check-equal? (remove-attrs '(p ((foo "bar")) "hi")) '(p "hi"))
 (check-equal? (remove-attrs '(p ((foo "bar")) "hi" (p ((foo "bar")) "hi"))) '(p "hi" (p "hi")))
+
 
 (check-equal? (map-elements (λ(x) (if (string? x) "boing" x))  
                                   '(p "foo" "bar" (em "square"))) 
               '(p "boing" "boing" (em "boing")))
+
+
+
 

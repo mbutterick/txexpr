@@ -1,4 +1,4 @@
 #lang info
-(define collection "tagged-xexpr")
+(define collection "txexpr")
 
-(define scribblings '(("scribblings/tagged-xexpr.scrbl" ())))
+(define scribblings '(("scribblings/txexpr.scrbl" ())))
