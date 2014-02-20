@@ -192,4 +192,19 @@
   (procedure? txexpr? . -> . txexpr?)
   (map-elements/exclude proc x (λ(x) #f)))
 
+;; function to split tag out of txexpr
+(define+provide/contract (splitf-txexpr tx proc)
+  (txexpr? procedure? . -> . (values (listof txexpr-element?) txexpr?))
+  (define matches empty)
+  (define (do-extraction x)
+    (cond
+      [(proc x) (begin  ; store matched item but return empty value
+                  (set! matches (cons x matches))
+                  empty)]
+      [(txexpr? x) (let-values([(tag attr body) (txexpr->values x)]) 
+                     (make-txexpr tag attr (do-extraction body)))]
+      [(txexpr-elements? x) (filter-not empty? (map do-extraction x))]
+      [else x]))
+  (define tx-extracted (do-extraction tx)) ;; do this first to fill matches
+  (values (reverse matches) tx-extracted)) 
 

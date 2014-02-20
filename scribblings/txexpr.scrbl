@@ -376,6 +376,20 @@ Be careful with the wider consequences of exclusion tests. When @racket[_exclude
 (map-elements/exclude upcaser tx (λ(x) (equal? (get-tag x) 'div)))
 ]
 
+@defproc[
+(splitf-txexpr
+[tx txexpr?]
+[pred procedure?])
+(values (listof txexpr-element?) txexpr?)]
+Recursively descend through @racket[_txexpr] and extract all elements that match @racket[_pred]. Returns two values: a list of matching elements, and the @racket[_txexpr] with the elements removed. Sort of esoteric, but I've needed it more than once, so here it is.
+
+@examples[#:eval my-eval
+(define tx '(div "Wonderful day" (meta "weather" "good") "for a walk"))
+(define remove? (λ(x) (and (txexpr? x) (equal? 'meta (get-tag x)))))
+(splitf-txexpr tx remove?)
+]
+
+
 @section{License & source code}
 
 This module is licensed under the LGPL.
