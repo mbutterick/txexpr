@@ -194,7 +194,7 @@
 
 ;; function to split tag out of txexpr
 (define+provide/contract (splitf-txexpr tx proc)
-  (txexpr? procedure? . -> . (values (listof txexpr-element?) txexpr?))
+  (txexpr? procedure? . -> . (values txexpr? (listof txexpr-element?)))
   (define matches empty)
   (define (do-extraction x)
     (cond
@@ -206,5 +206,5 @@
       [(txexpr-elements? x) (filter-not empty? (map do-extraction x))]
       [else x]))
   (define tx-extracted (do-extraction tx)) ;; do this first to fill matches
-  (values (reverse matches) tx-extracted)) 
+  (values tx-extracted (reverse matches))) 
 

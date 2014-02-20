@@ -380,8 +380,8 @@ Be careful with the wider consequences of exclusion tests. When @racket[_exclude
 (splitf-txexpr
 [tx txexpr?]
 [pred procedure?])
-(values (listof txexpr-element?) txexpr?)]
-Recursively descend through @racket[_txexpr] and extract all elements that match @racket[_pred]. Returns two values: a list of matching elements, and the @racket[_txexpr] with the elements removed. Sort of esoteric, but I've needed it more than once, so here it is.
+(values txexpr? (listof txexpr-element?))]
+Recursively descend through @racket[_txexpr] and extract all elements that match @racket[_pred]. Returns two values: a @racket[_txexpr] with the matching elements removed, and the list of matching elements. Sort of esoteric, but I've needed it more than once, so here it is.
 
 @examples[#:eval my-eval
 (define tx '(div "Wonderful day" (meta "weather" "good") "for a walk"))

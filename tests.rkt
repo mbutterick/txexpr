@@ -113,6 +113,5 @@
 (define split-this-tx '(root (meta "foo" "bar") "hello" "world" (meta "foo2" "bar2") 
                   (em "goodnight" "moon" (meta "foo3" "bar3"))))
 (check-equal? (call-with-values (λ() (splitf-txexpr split-this-tx (λ(x) (and (txexpr? x) (equal? 'meta (car x)))))) list) 
-              (list '((meta "foo" "bar") (meta "foo2" "bar2") (meta "foo3" "bar3")) 
-                    '(root "hello" "world" (em "goodnight" "moon"))))
+              (list '(root "hello" "world" (em "goodnight" "moon")) '((meta "foo" "bar") (meta "foo2" "bar2") (meta "foo3" "bar3"))))
 
