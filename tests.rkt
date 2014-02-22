@@ -1,12 +1,10 @@
 #lang racket/base
 (require (for-syntax racket/base))
-(require "main.rkt" rackunit)
+(require (submod "main.rkt" safe) rackunit)
 
 (define-syntax (values->list stx)
   (syntax-case stx ()
     [(_ values-expr) #'(call-with-values (λ () values-expr) list)]))
-
-(define empty '())
 
 (check-true (txexpr-tag?'foo))
 (check-false (txexpr-tag? "foo"))
@@ -47,16 +45,16 @@
 
 (check-equal? (make-txexpr 'p) '(p))
 (check-equal? (make-txexpr 'p '((key "value"))) '(p ((key "value"))))
-(check-equal? (make-txexpr 'p empty '("foo" "bar")) '(p "foo" "bar"))
+(check-equal? (make-txexpr 'p null '("foo" "bar")) '(p "foo" "bar"))
 (check-equal? (make-txexpr 'p '((key "value")) (list "foo" "bar")) 
               '(p ((key "value")) "foo" "bar"))
 
 (check-equal? (values->list (txexpr->values '(p))) 
-              (values->list (values 'p empty empty)))
+              (values->list (values 'p null null)))
 (check-equal? (values->list (txexpr->values '(p "foo"))) 
-              (values->list (values 'p empty '("foo"))))
+              (values->list (values 'p null '("foo"))))
 (check-equal? (values->list (txexpr->values '(p ((key "value"))))) 
-              (values->list (values 'p '((key "value")) empty)))
+              (values->list (values 'p '((key "value")) null)))
 (check-equal? (values->list (txexpr->values '(p ((key "value")) "foo"))) 
               (values->list (values 'p '((key "value")) '("foo"))))
 

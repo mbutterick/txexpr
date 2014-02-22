@@ -10,7 +10,16 @@
 
 @author[(author+email "Matthew Butterick" "mb@mbtype.com")]
 
+@defmodule[#:multi (txexpr (submod txexpr safe))]
+
 A set of small but handy functions for improving the readability and reliability of programs that operate on tagged X-expressions (for short, @italic{txexpr}s).
+
+@section{Importing the module}
+
+The module operates in two modes: fast and safe. Fast mode is the default, which you get by importing the module in the usual way: @code{(require txexpr)}. 
+
+Safe mode enables the function contracts documented below. Use safe mode by importing the module as @code{(require (submod txexpr safe))}.
+
 
 @section{Installation}
 
