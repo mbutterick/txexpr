@@ -86,8 +86,6 @@ The programming is trivial, but the annoyance is real.
 
 @section{Interface}
 
-@defmodule[txexpr]
-
 @deftogether[(
 @defproc[
 (txexpr?
