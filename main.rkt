@@ -153,6 +153,11 @@
   (hash? . -> . txexpr-attrs?)
   (hash-map hash list))
 
+(define+provide+safe (attrs-have-key? x key)
+  ((or/c txexpr-attrs? txexpr?) can-be-txexpr-attr-key? . -> . boolean?)
+  (define attrs (if (txexpr-attrs? x) x (get-attrs x)))
+  (hash-has-key? (attrs->hash attrs) (->txexpr-attr-key key)))
+
 (define+provide+safe (attr-set tx key value)
   (txexpr? can-be-txexpr-attr-key? can-be-txexpr-attr-value? . -> . txexpr?)
   (define new-attrs 

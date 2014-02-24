@@ -271,6 +271,19 @@ Convert @racket[_attrs] to an immutable hash, and back again.
 ]
 
 @defproc[
+(attrs-have-key?
+[attrs (or/c txexpr-attrs? txexpr?)]
+[key can-be-txexpr-attr-key?])
+boolean?]
+Returns @racket[#t] if the @racket[_attrs] contain a value for the given @racket[_key], @racket[#f] otherwise.
+
+@examples[#:eval my-eval
+(define tx '(div [[id "top"][class "red"]] "Hello" (p "World")))
+(attrs-have-key? tx 'id)
+(attrs-have-key? tx 'grackle)
+]
+
+@defproc[
 (attr-ref
 [tx txexpr?]
 [key can-be-txexpr-attr-key?])

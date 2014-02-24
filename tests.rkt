@@ -88,6 +88,11 @@
 (check-equal? (attr-ref '(p ((foo "bar"))) 'foo) "bar")
 (check-equal? (attr-set '(p ((foo "bar"))) 'foo "fraw") '(p ((foo "fraw"))))
 
+(check-true (attrs-have-key? '(p ((color "red")(shape "circle"))) 'color))
+(check-true (attrs-have-key? '(p ((color "red")(shape "circle"))) "color"))
+(check-false (attrs-have-key? '((color "red")(shape "circle")) 'nonexistent))
+
+
 (check-equal? (merge-attrs 'foo "bar") '((foo "bar")))
 (check-equal? (merge-attrs '(foo "bar")) '((foo "bar")))
 (check-equal? (merge-attrs '((foo "bar"))) '((foo "bar")))
