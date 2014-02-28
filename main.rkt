@@ -1,20 +1,9 @@
 #lang racket/base
-(require (for-syntax racket/base))
 (require racket/match xml)
+(require sugar/define)
 
-(module+ safe (require racket/contract))
-
-(define-syntax (define+provide+safe stx)
-  (syntax-case stx ()
-    [(_ (proc arg ... . rest-arg) contract body ...)
-     #'(define+provide+safe proc contract
-         (λ(arg ... . rest-arg) body ...))]
-    [(_ name contract body ...)
-     #'(begin
-         (define name body ...)
-         (provide name)
-         (module+ safe 
-           (provide (contract-out [name contract]))))]))
+(module+ safe
+  (require racket/contract))
 
 (define+provide+safe (txexpr-tag? x)
   (any/c . -> . boolean?)
@@ -222,3 +211,10 @@
   (define tx-extracted (do-extraction tx)) ;; do this first to fill matches
   (values tx-extracted (reverse matches))) 
 
+
+#|
+(module+ main
+  (define tx '(root (meta ((here "pollen"))) (meta ((here-path "/Users/mb/Desktop/pollen.pm"))) "\n" "\n" (make-table ("" "writer" "reader") ("Attention span" "Long" "Short") ("Interest in topic" "High" "Low") ("Persuadable by other opinions" "No" "Yes") ("Cares about your happiness" "Yes" "No"))))
+  (splitf-txexpr tx (λ(x) (and (txexpr? x) (equal? 'meta (car x))))))
+
+|#
