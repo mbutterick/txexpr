@@ -222,3 +222,16 @@
   (define tx-extracted (do-extraction tx)) ;; do this first to fill matches
   (values tx-extracted (reverse matches))) 
 
+
+(define+provide+safe (txexpr->html x)
+  (txexpr? . -> . string?)
+  (define (->cdata x)
+    (if (cdata? x) x (cdata #f #f x)))
+  
+  (xexpr->string (let loop ([x x])
+                   (cond
+                     [(txexpr? x) (if (member (get-tag x) '(script style))
+                                      (make-txexpr (get-tag x) (get-attrs x) (map ->cdata (get-elements x)))
+                                      (make-txexpr (get-tag x) (get-attrs x) (map loop (get-elements x))))]
+                     [else x]))))
+
