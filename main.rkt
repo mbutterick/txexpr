@@ -1,6 +1,6 @@
 #lang racket/base
 (require (for-syntax racket/base))
-(require racket/match xml)
+(require racket/match xml racket/string)
 
 (module+ safe (require racket/contract))
 
@@ -27,9 +27,8 @@
     [else #f]))
 
 
-(require racket/string)
 (define+provide+safe (validate-txexpr-attrs? x #:context [txexpr-context #f])
-  ((any/c) (#:context (or/c #f txexpr?)) . ->* . boolean?)
+  ((any/c) (#:context (or/c #f txexpr?)) . ->* . txexpr-attrs?)
   (define (make-reason) 
     (if (not (list? x)) 
         (format "because ~v is not a list" x)
@@ -37,9 +36,8 @@
           (format "because ~a ~a" (string-join (map (λ(ba) (format "~v" ba)) bad-attrs) " and ") (if (> (length bad-attrs) 1)
                                                 "are not valid txexpr-attrs"
                                                 "is not a valid attr")))))
-  
   (match x
-    [(list (? txexpr-attr?) ...) #t]
+    [(list (? txexpr-attr?) ...) x]
     [else [else (error (string-append "validate-txexpr-attrs: "
                                 (if txexpr-context (format "in ~v, " txexpr-context) "")
                                 (format "~v is not a valid list of attrs ~a" x (make-reason))))]]))
@@ -47,7 +45,7 @@
 (define+provide+safe (txexpr-attrs? x)
   (any/c . -> . boolean?)
   (with-handlers ([exn:fail? (λ(exn) #f)])
-    (validate-txexpr-attrs? x)))
+    (and (validate-txexpr-attrs? x) #t)))
 
 
 (define+provide+safe (txexpr-elements? x)
@@ -57,10 +55,10 @@
     [else #f]))
 
 (define+provide+safe (validate-txexpr-element? x #:context [txexpr-context #f])
-  ((any/c) (#:context (or/c #f txexpr?)) . ->* . boolean?)
+  ((any/c) (#:context (or/c #f txexpr?)) . ->* . txexpr-element?)
   (cond
     [(or (string? x) (txexpr? x) (symbol? x)
-         (valid-char? x) (cdata? x)) #t]
+         (valid-char? x) (cdata? x)) x]
     [else (error (string-append "validate-txexpr-element: "
                                 (if txexpr-context (format "in ~v, " txexpr-context) "")
                                 (format "~v is not a valid element (expecting txexpr, string, symbol, XML char, or cdata)" x)))]))
@@ -69,27 +67,28 @@
 (define+provide+safe (txexpr-element? x)
   (any/c . -> . boolean?)
   (with-handlers ([exn:fail? (λ(exn) #f)])
-    (validate-txexpr-element? x)))
+    (and (validate-txexpr-element? x) #t)))
 
 ;; is it a named x-expression?
 ;; todo: rewrite this recurively so errors can be pinpointed (for debugging)
 (define+provide+safe (validate-txexpr? x)
-  (any/c . -> . boolean?)
+  (any/c . -> . txexpr?)
   (define (validate-txexpr-element-with-context? e) (validate-txexpr-element? e #:context x))
   (define (validate-txexpr-attrs-with-context? e) (validate-txexpr-attrs? e #:context x))
   
-  (match x
+  (when (match x
     [(list (? symbol? name) rest ...)          ;; is a list starting with a symbol
      (or (null? rest) 
          (andmap txexpr-element? rest)           ;; the rest is content or ...
          (and (validate-txexpr-attrs-with-context? (car rest)) 
               (andmap validate-txexpr-element-with-context? (cdr rest))))] ;; attr + content 
-    [else (error (format "validate-txexpr: first element is not a symbol in ~v" x))]))
+    [else (error (format "validate-txexpr: first element is not a symbol in ~v" x))])
+    x))
 
 (define+provide+safe (txexpr? x)
   (any/c . -> . boolean?)
   (with-handlers ([exn:fail? (λ(exn) #f)])
-    (validate-txexpr? x)))
+    (and (validate-txexpr? x) #t)))
 
 
 
