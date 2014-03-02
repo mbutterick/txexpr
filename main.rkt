@@ -26,16 +26,29 @@
     [(list (? symbol?) (? string?)) #t]
     [else #f]))
 
-(define+provide+safe (txexpr-attrs? x)
-  (any/c . -> . boolean?)
+
+(require racket/string)
+(define (validate-txexpr-attrs? x #:context [txexpr-context #f])
+  
+  (define (make-reason) 
+    (if (not (list? x)) 
+        (format "because ~v is not a list" x)
+        (let ([bad-attrs (filter (λ(i) (not (txexpr-attr? i))) x)])
+          (format "because ~a ~a" (string-join (map (λ(ba) (format "~v" ba)) bad-attrs) " and ") (if (> (length bad-attrs) 1)
+                                                "are not valid txexpr-attrs"
+                                                "is not a valid attr")))))
+  
   (match x
     [(list (? txexpr-attr?) ...) #t]
-    [else #f]))
+    [else [else (error (string-append "validate-txexpr-attrs: "
+                                (if txexpr-context (format "in ~v, " txexpr-context) "")
+                                (format "~v is not a valid list of attrs ~a" x (make-reason))))]]))
 
-(define+provide+safe (txexpr-element? x)
+(define+provide+safe (txexpr-attrs? x)
   (any/c . -> . boolean?)
-  (or (string? x) (txexpr? x) (symbol? x)
-      (valid-char? x) (cdata? x)))
+  (with-handlers ([exn:fail? (λ(exn) #f)])
+    (validate-txexpr-attrs? x)))
+
 
 (define+provide+safe (txexpr-elements? x)
   (any/c . -> . boolean?)
@@ -43,17 +56,41 @@
     [(list elem ...) (andmap txexpr-element? elem)]
     [else #f]))
 
+(define (validate-txexpr-element? x #:context [txexpr-context #f])
+  (cond
+    [(or (string? x) (txexpr? x) (symbol? x)
+         (valid-char? x) (cdata? x)) #t]
+    [else (error (string-append "validate-txexpr-element: "
+                                (if txexpr-context (format "in ~v, " txexpr-context) "")
+                                (format "~v is not a valid element (expecting txexpr, string, symbol, XML char, or cdata)" x)))]))
+
+
+(define+provide+safe (txexpr-element? x)
+  (any/c . -> . boolean?)
+  (with-handlers ([exn:fail? (λ(exn) #f)])
+    (validate-txexpr-element? x)))
+
 ;; is it a named x-expression?
 ;; todo: rewrite this recurively so errors can be pinpointed (for debugging)
+(define+provide+safe (validate-txexpr? x)
+  (any/c . -> . boolean?)
+  (define (validate-txexpr-element-with-context? e) (validate-txexpr-element? e #:context x))
+  (define (validate-txexpr-attrs-with-context? e) (validate-txexpr-attrs? e #:context x))
+  
+  (match x
+    [(list (? symbol? name) rest ...)          ;; is a list starting with a symbol
+     (or (null? rest) 
+         (andmap txexpr-element? rest)           ;; the rest is content or ...
+         (and (validate-txexpr-attrs-with-context? (car rest)) 
+              (andmap validate-txexpr-element-with-context? (cdr rest))))] ;; attr + content 
+    [else (error (format "validate-txexpr: first element is not a symbol in ~v" x))]))
+
 (define+provide+safe (txexpr? x)
   (any/c . -> . boolean?)
-  (and (xexpr? x) ; meets basic xexpr contract
-       (match x
-         [(list (? symbol? name) rest ...)          ;; is a list starting with a symbol
-          (or (null? rest) 
-              (andmap txexpr-element? rest)           ;; the rest is content or ...
-              (and (txexpr-attrs? (car rest)) (andmap txexpr-element? (cdr rest))))] ;; attr + content 
-         [else #f])))
+  (with-handlers ([exn:fail? (λ(exn) #f)])
+    (validate-txexpr? x)))
+
+
 
 (define+provide+safe (make-txexpr tag [attrs null] [elements null])
   ;; todo?: use xexpr/c provides a nicer error message
