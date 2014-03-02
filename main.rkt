@@ -28,8 +28,8 @@
 
 
 (require racket/string)
-(define (validate-txexpr-attrs? x #:context [txexpr-context #f])
-  
+(define+provide+safe (validate-txexpr-attrs? x #:context [txexpr-context #f])
+  ((any/c) (#:context (or/c #f txexpr?)) . ->* . boolean?)
   (define (make-reason) 
     (if (not (list? x)) 
         (format "because ~v is not a list" x)
@@ -56,7 +56,8 @@
     [(list elem ...) (andmap txexpr-element? elem)]
     [else #f]))
 
-(define (validate-txexpr-element? x #:context [txexpr-context #f])
+(define+provide+safe (validate-txexpr-element? x #:context [txexpr-context #f])
+  ((any/c) (#:context (or/c #f txexpr?)) . ->* . boolean?)
   (cond
     [(or (string? x) (txexpr? x) (symbol? x)
          (valid-char? x) (cdata? x)) #t]
@@ -100,8 +101,7 @@
 
 
 (define+provide+safe (txexpr->values x)
-  (txexpr? . -> . 
-           (values symbol? txexpr-attrs? (listof txexpr-element?)))
+  (txexpr? . -> . (values symbol? txexpr-attrs? (listof txexpr-element?)))
   (match 
       ; txexpr may or may not have attr
       ; if not, add null attr so that decomposition only handles one case
