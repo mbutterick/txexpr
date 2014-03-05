@@ -34,13 +34,13 @@
         (format "because ~v is not a list" x)
         (let ([bad-attrs (filter (λ(i) (not (txexpr-attr? i))) x)])
           (format "because ~a ~a" (string-join (map (λ(ba) (format "~v" ba)) bad-attrs) " and ") (if (> (length bad-attrs) 1)
-                                                "are not valid txexpr-attrs"
-                                                "is not a valid attr")))))
+                                                                                                     "are not valid txexpr-attrs"
+                                                                                                     "is not a valid attr")))))
   (match x
     [(list (? txexpr-attr?) ...) x]
     [else [else (error (string-append "validate-txexpr-attrs: "
-                                (if txexpr-context (format "in ~v, " txexpr-context) "")
-                                (format "~v is not a valid list of attrs ~a" x (make-reason))))]]))
+                                      (if txexpr-context (format "in ~v, " txexpr-context) "")
+                                      (format "~v is not a valid list of attrs ~a" x (make-reason))))]]))
 
 (define+provide+safe (txexpr-attrs? x)
   (any/c . -> . boolean?)
@@ -77,12 +77,12 @@
   (define (validate-txexpr-attrs-with-context? e) (validate-txexpr-attrs? e #:context x))
   
   (when (match x
-    [(list (? symbol? name) rest ...)          ;; is a list starting with a symbol
-     (or (null? rest) 
-         (andmap txexpr-element? rest)           ;; the rest is content or ...
-         (and (validate-txexpr-attrs-with-context? (car rest)) 
-              (andmap validate-txexpr-element-with-context? (cdr rest))))] ;; attr + content 
-    [else (error (format "validate-txexpr: first element is not a symbol in ~v" x))])
+          [(list (? symbol?)) #t]
+          [(list (? symbol? name) (and attr-list (list (list k v ...) ...)) rest ...) 
+           (and (validate-txexpr-attrs-with-context? attr-list) 
+                    (andmap validate-txexpr-element-with-context? rest))]
+          [(list (? symbol? name) rest ...)(andmap validate-txexpr-element-with-context? rest)]
+          [else (error (format "validate-txexpr: first element is not a symbol in ~v" x))])
     x))
 
 (define+provide+safe (txexpr? x)
