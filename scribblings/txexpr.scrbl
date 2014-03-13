@@ -146,6 +146,24 @@ boolean?]
 Shorthand for @code{(listof txexpr-attr?)} and @code{(listof txexpr-element?)}.
 
 
+
+@defproc[
+(validate-txexpr
+[possible-txexpr any/c])
+txexpr?]
+Like @racket[txexpr?], but raises a descriptive error if @racket[_possible-txexpr] is invalid, and otherwise returns @racket[_possible-txexpr] itself.
+
+@examples[#:eval my-eval
+(validate-txexpr 'root)
+(validate-txexpr '(root))
+(validate-txexpr '(root ((id "top")(class 42))))
+(validate-txexpr '(root ((id "top")(class "42"))))
+(validate-txexpr '(root ((id "top")(class "42")) ("hi")))
+(validate-txexpr '(root ((id "top")(class "42")) "hi"))
+]
+
+
+
 @deftogether[(
 
 @defproc[
@@ -202,6 +220,19 @@ Like @racket[txexpr->values], but returns the three components in a list.
 (txexpr->list '(div "Hello" (p "World")))
 (txexpr->list '(div [[id "top"]] "Hello" (p "World")))
 ]
+
+@defproc[
+(txexpr->html
+[tx txexpr?])
+string?]
+Convert @racket[_tx] to an HTML string. Better than @racket[xexpr->string] because consistent with the HTML spec, it will not escape text that appears within @code{script} or @code{style} blocks.
+
+@examples[#:eval my-eval
+(define tx '(root (script "3 > 2") "Why is 3 > 2?"))
+(xexpr->string tx)
+(txexpr->html tx)
+]
+
 
 @deftogether[(
 @defproc[
