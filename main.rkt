@@ -35,7 +35,7 @@
         (let ([bad-attrs (filter (λ(i) (not (txexpr-attr? i))) x)])
           (format "because ~a ~a" (string-join (map (λ(ba) (format "~v" ba)) bad-attrs) " and ") (if (> (length bad-attrs) 1)
                                                                                                      "are not valid attributes"
-                                                                                                     "is not in the form (list symbol? string?)")))))
+                                                                                                     "is not in the form '(symbol \"string\")")))))
   (match x
     [(list (? txexpr-attr?) ...) x]
     [else [else (error (string-append "validate-txexpr-attrs: "
@@ -61,7 +61,7 @@
          (valid-char? x) (cdata? x)) x]
     [else (error (string-append "validate-txexpr-element: "
                                 (if txexpr-context (format "in ~v, " txexpr-context) "")
-                                (format "~v is not a valid element (expecting txexpr, string, symbol, XML char, or cdata)" x)))]))
+                                (format "~v is not a valid element (must be txexpr, string, symbol, XML char, or cdata)" x)))]))
 
 
 (define+provide+safe (txexpr-element? x)
@@ -82,7 +82,7 @@
            (and (validate-txexpr-attrs-with-context attr-list) 
                     (andmap validate-txexpr-element-with-context rest))]
           [(list (? symbol? name) rest ...)(andmap validate-txexpr-element-with-context rest)]
-          [else (error (format "validate-txexpr: first element is not a symbol in ~v" x))])
+          [else (error (format "validate-txexpr: ~v is not a list starting with a symbol" x))])
     x))
 
 (define+provide+safe (txexpr? x)
