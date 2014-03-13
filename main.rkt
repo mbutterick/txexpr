@@ -34,13 +34,13 @@
         (format "because ~v is not a list" x)
         (let ([bad-attrs (filter (λ(i) (not (txexpr-attr? i))) x)])
           (format "because ~a ~a" (string-join (map (λ(ba) (format "~v" ba)) bad-attrs) " and ") (if (> (length bad-attrs) 1)
-                                                                                                     "are not valid txexpr-attrs"
-                                                                                                     "is not a valid attr")))))
+                                                                                                     "are not valid attributes"
+                                                                                                     "is not in the form (list symbol? string?)")))))
   (match x
     [(list (? txexpr-attr?) ...) x]
     [else [else (error (string-append "validate-txexpr-attrs: "
                                       (if txexpr-context (format "in ~v, " txexpr-context) "")
-                                      (format "~v is not a valid list of attrs ~a" x (make-reason))))]]))
+                                      (format "~v is not a valid list of attributes ~a" x (make-reason))))]]))
 
 (define+provide+safe (txexpr-attrs? x)
   (any/c . -> . boolean?)
