@@ -146,20 +146,18 @@ boolean?]
 Shorthand for @code{(listof txexpr-attr?)} and @code{(listof txexpr-element?)}.
 
 
-@deftogether[(
 
 @defproc[
-(validate-txexpr?
+(validate-txexpr
 [possible-txexpr any/c])
 txexpr?]
+Like @racket[txexpr?], but raises a descriptive error if @racket[_possible-txexpr] is invalid, and otherwise returns @racket[_possible-txexpr] itself.
 
-
-@defproc[
-(can-be-txexpr-attr-value?
-[v any/c])
-boolean?]
-)]
-Predicates for input arguments that are trivially converted to an attribute @racket[_key] or @racket[_value]…
+@examples[#:eval my-eval
+(validate-txexpr '(root (mama.html son.html daughter.html) uncle.html))
+(validate-txexpr `(root (,+ son.html daughter.html) uncle.html))
+(validate-txexpr '(root (mama.html son.html son.html) mama.html))
+]
 
 
 

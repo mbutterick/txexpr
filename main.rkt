@@ -27,7 +27,7 @@
     [else #f]))
 
 
-(define (validate-txexpr-attrs? x #:context [txexpr-context #f])
+(define (validate-txexpr-attrs x #:context [txexpr-context #f])
  ; ((any/c) (#:context (or/c #f txexpr?)) . ->* . txexpr-attrs?)
   (define (make-reason) 
     (if (not (list? x)) 
@@ -45,7 +45,7 @@
 (define+provide+safe (txexpr-attrs? x)
   (any/c . -> . boolean?)
   (with-handlers ([exn:fail? (λ(exn) #f)])
-    (and (validate-txexpr-attrs? x) #t)))
+    (and (validate-txexpr-attrs x) #t)))
 
 
 (define+provide+safe (txexpr-elements? x)
@@ -54,7 +54,7 @@
     [(list elem ...) (andmap txexpr-element? elem)]
     [else #f]))
 
-(define (validate-txexpr-element? x #:context [txexpr-context #f])
+(define (validate-txexpr-element x #:context [txexpr-context #f])
  ; ((any/c) (#:context (or/c #f txexpr?)) . ->* . txexpr-element?)
   (cond
     [(or (string? x) (txexpr? x) (symbol? x)
@@ -67,28 +67,28 @@
 (define+provide+safe (txexpr-element? x)
   (any/c . -> . boolean?)
   (with-handlers ([exn:fail? (λ(exn) #f)])
-    (and (validate-txexpr-element? x) #t)))
+    (and (validate-txexpr-element x) #t)))
 
 ;; is it a named x-expression?
 ;; todo: rewrite this recurively so errors can be pinpointed (for debugging)
-(define+provide+safe (validate-txexpr? x)
+(define+provide+safe (validate-txexpr x)
   (any/c . -> . txexpr?)
-  (define (validate-txexpr-element-with-context? e) (validate-txexpr-element? e #:context x))
-  (define (validate-txexpr-attrs-with-context? e) (validate-txexpr-attrs? e #:context x))
+  (define (validate-txexpr-element-with-context e) (validate-txexpr-element e #:context x))
+  (define (validate-txexpr-attrs-with-context e) (validate-txexpr-attrs e #:context x))
   
   (when (match x
           [(list (? symbol?)) #t]
           [(list (? symbol? name) (and attr-list (list (list k v ...) ...)) rest ...) 
-           (and (validate-txexpr-attrs-with-context? attr-list) 
-                    (andmap validate-txexpr-element-with-context? rest))]
-          [(list (? symbol? name) rest ...)(andmap validate-txexpr-element-with-context? rest)]
+           (and (validate-txexpr-attrs-with-context attr-list) 
+                    (andmap validate-txexpr-element-with-context rest))]
+          [(list (? symbol? name) rest ...)(andmap validate-txexpr-element-with-context rest)]
           [else (error (format "validate-txexpr: first element is not a symbol in ~v" x))])
     x))
 
 (define+provide+safe (txexpr? x)
   (any/c . -> . boolean?)
   (with-handlers ([exn:fail? (λ(exn) #f)])
-    (and (validate-txexpr? x) #t)))
+    (and (validate-txexpr x) #t)))
 
 
 
