@@ -149,6 +149,23 @@ Shorthand for @code{(listof txexpr-attr?)} and @code{(listof txexpr-element?)}.
 @deftogether[(
 
 @defproc[
+(validate-txexpr?
+[possible-txexpr any/c])
+txexpr?]
+
+
+@defproc[
+(can-be-txexpr-attr-value?
+[v any/c])
+boolean?]
+)]
+Predicates for input arguments that are trivially converted to an attribute @racket[_key] or @racket[_value]…
+
+
+
+@deftogether[(
+
+@defproc[
 (can-be-txexpr-attr-key?
 [v any/c])
 boolean?]

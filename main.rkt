@@ -27,8 +27,8 @@
     [else #f]))
 
 
-(define+provide+safe (validate-txexpr-attrs? x #:context [txexpr-context #f])
-  ((any/c) (#:context (or/c #f txexpr?)) . ->* . txexpr-attrs?)
+(define (validate-txexpr-attrs? x #:context [txexpr-context #f])
+ ; ((any/c) (#:context (or/c #f txexpr?)) . ->* . txexpr-attrs?)
   (define (make-reason) 
     (if (not (list? x)) 
         (format "because ~v is not a list" x)
@@ -54,8 +54,8 @@
     [(list elem ...) (andmap txexpr-element? elem)]
     [else #f]))
 
-(define+provide+safe (validate-txexpr-element? x #:context [txexpr-context #f])
-  ((any/c) (#:context (or/c #f txexpr?)) . ->* . txexpr-element?)
+(define (validate-txexpr-element? x #:context [txexpr-context #f])
+ ; ((any/c) (#:context (or/c #f txexpr?)) . ->* . txexpr-element?)
   (cond
     [(or (string? x) (txexpr? x) (symbol? x)
          (valid-char? x) (cdata? x)) x]
