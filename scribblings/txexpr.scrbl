@@ -222,15 +222,16 @@ Like @racket[txexpr->values], but returns the three components in a list.
 ]
 
 @defproc[
-(txexpr->html
-[tx txexpr?])
+(xexpr->html
+[x xexpr?])
 string?]
-Convert @racket[_tx] to an HTML string. Better than @racket[xexpr->string] because consistent with the HTML spec, it will not escape text that appears within @code{script} or @code{style} blocks.
+Convert @racket[_x] to an HTML string. Better than @racket[xexpr->string] because consistent with the HTML spec, it will not escape text that appears within @code{script} or @code{style} blocks. For convenience, this function will take any X-expression, not just tagged X-expressions.
 
 @examples[#:eval my-eval
 (define tx '(root (script "3 > 2") "Why is 3 > 2?"))
 (xexpr->string tx)
-(txexpr->html tx)
+(xexpr->html tx)
+(map xexpr->html (list "string" 'entity 65))
 ]
 
 

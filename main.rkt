@@ -259,8 +259,8 @@
   (values tx-extracted (reverse matches))) 
 
 
-(define+provide+safe (txexpr->html x)
-  (txexpr? . -> . string?)
+(define+provide+safe (xexpr->html x)
+  (xexpr? . -> . string?)
   (define (->cdata x)
     (if (cdata? x) x (cdata #f #f x)))
   
