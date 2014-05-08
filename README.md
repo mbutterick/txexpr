@@ -11,4 +11,4 @@ Then require it in your Racket file:
 
     (require txexpr)
 
-Full docs are installed with the package.
+Full docs are installed with the package. You can also [read the docs here](http://mbutterick.github.io/txexpr/doc/).

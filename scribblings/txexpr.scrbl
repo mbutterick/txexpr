@@ -1,6 +1,6 @@
 #lang scribble/manual
 
-@(require scribble/eval (for-label racket "../main.rkt" xml))
+@(require scribble/eval (for-label racket txexpr xml))
 
 @(define my-eval (make-base-eval))
 @(my-eval `(require txexpr xml))
