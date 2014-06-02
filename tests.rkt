@@ -83,7 +83,7 @@
 (check-equal? (attrs->hash '((foo "bar")) '(foo "fraw")) '#hash((foo . "fraw")))
 (check-equal? (attrs->hash '((foo "bar")) '(foo "fraw") 'foo "dog") '#hash((foo . "dog")))
 
-;(check-equal? (hash->attrs '#hash((foo . "bar")(hee . "haw"))) '((foo "bar")(hee "haw")))
+(check-equal? (hash->attrs '#hash((foo . "bar")(hee . "haw"))) '((foo "bar")(hee "haw")))
 
 (check-equal? (attr-ref '(p ((foo "bar"))) 'foo) "bar")
 (check-equal? (attr-set '(p ((foo "bar"))) 'foo "fraw") '(p ((foo "fraw"))))
@@ -118,5 +118,5 @@
 (check-equal? (call-with-values (λ() (splitf-txexpr split-this-tx (λ(x) (and (txexpr? x) (equal? 'meta (car x)))))) list) 
               (list '(root "hello" "world" (em "goodnight" "moon")) '((meta "foo" "bar") (meta "foo2" "bar2") (meta "foo3" "bar3"))))
 
-(check-equal? (xexpr->html '(root (script "3 > 2") "Why is 3 > 2?"))
+(check-equal? (txexpr->html '(root (script "3 > 2") "Why is 3 > 2?"))
               "<root><script>3 > 2</script>Why is 3 &gt; 2?</root>")
