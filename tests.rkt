@@ -118,5 +118,5 @@
 (check-equal? (call-with-values (λ() (splitf-txexpr split-this-tx (λ(x) (and (txexpr? x) (equal? 'meta (car x)))))) list) 
               (list '(root "hello" "world" (em "goodnight" "moon")) '((meta "foo" "bar") (meta "foo2" "bar2") (meta "foo3" "bar3"))))
 
-(check-equal? (txexpr->html '(root (script "3 > 2") "Why is 3 > 2?"))
+(check-equal? (xexpr->html '(root (script "3 > 2") "Why is 3 > 2?"))
               "<root><script>3 > 2</script>Why is 3 &gt; 2?</root>")
