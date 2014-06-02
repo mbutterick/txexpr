@@ -10,7 +10,7 @@
 
 @author[(author+email "Matthew Butterick" "mb@mbtype.com")]
 
-@defmodule[#:multi (txexpr (submod txexpr safe))]
+@defmodule[txexpr]
 
 A set of small but handy functions for improving the readability and reliability of programs that operate on tagged X-expressions (for short, @italic{txexpr}s).
 

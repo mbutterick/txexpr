@@ -18,4 +18,5 @@ Icon
 scribblings/*.js
 scribblings/*.css
 scribblings/*.html
-scribblings/pollen/*
+scribblings/txexpr/*
+txexpr/doc/*
