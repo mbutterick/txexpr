@@ -1,7 +1,7 @@
 txexpr
 ---------------
 
-Convenience functions for working with HTML-style tagged X-expressions in Racket
+Convenience functions for working with HTML-style tagged X-expressions in Racket 6.0+
 
 Install from the command line like so:
 
