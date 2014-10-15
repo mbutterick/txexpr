@@ -243,21 +243,20 @@
   (map-elements/exclude proc x (λ(x) #f)))
 
 ;; function to split tag out of txexpr
-(define+provide+safe (splitf-txexpr tx proc)
-  (txexpr? procedure? . -> . (values txexpr? (listof txexpr-element?)))
+(define+provide+safe (splitf-txexpr tx pred [proc (λ(x) null)])
+  ((txexpr? procedure?) (procedure?) . ->* . (values txexpr? (listof txexpr-element?)))
   (define matches null)
   (define (do-extraction x)
     (cond
-      [(proc x) (begin  ; store matched item but return null value
+      [(pred x) (begin  ; store matched item and return processed value
                   (set! matches (cons x matches))
-                  null)]
+                  (proc x))]
       [(txexpr? x) (let-values([(tag attr body) (txexpr->values x)]) 
                      (make-txexpr tag attr (do-extraction body)))]
       [(txexpr-elements? x) (filter (compose1 not null?) (map do-extraction x))]
       [else x]))
   (define tx-extracted (do-extraction tx)) ;; do this first to fill matches
   (values tx-extracted (reverse matches))) 
-
 
 (define+provide+safe (xexpr->html x)
   (xexpr? . -> . string?)
