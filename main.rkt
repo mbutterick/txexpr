@@ -28,7 +28,7 @@
 
 
 (define (validate-txexpr-attrs x #:context [txexpr-context #f])
- ; ((any/c) (#:context (or/c #f txexpr?)) . ->* . txexpr-attrs?)
+  ; ((any/c) (#:context (or/c #f txexpr?)) . ->* . txexpr-attrs?)
   (define (make-reason) 
     (if (not (list? x)) 
         (format "because ~v is not a list" x)
@@ -55,7 +55,7 @@
     [else #f]))
 
 (define (validate-txexpr-element x #:context [txexpr-context #f])
- ; ((any/c) (#:context (or/c #f txexpr?)) . ->* . txexpr-element?)
+  ; ((any/c) (#:context (or/c #f txexpr?)) . ->* . txexpr-element?)
   (cond
     [(or (string? x) (txexpr? x) (symbol? x)
          (valid-char? x) (cdata? x)) x]
@@ -80,7 +80,7 @@
           [(list (? symbol?)) #t]
           [(list (? symbol? name) (and attr-list (list (list k v ...) ...)) rest ...) 
            (and (validate-txexpr-attrs-with-context attr-list) 
-                    (andmap validate-txexpr-element-with-context rest))]
+                (andmap validate-txexpr-element-with-context rest))]
           [(list (? symbol? name) rest ...)(andmap validate-txexpr-element-with-context rest)]
           [else (error (format "validate-txexpr: ~v is not a list starting with a symbol" x))])
     x))
@@ -194,6 +194,15 @@
   (define attrs (if (txexpr-attrs? x) x (get-attrs x)))
   (hash-has-key? (attrs->hash attrs) (->txexpr-attr-key key)))
 
+(define+provide+safe (attrs-equal? x1 x2)
+  ((or/c txexpr-attrs? txexpr?) (or/c txexpr-attrs? txexpr?) . -> . boolean?)
+  (define attrs-tx1 (attrs->hash (if (txexpr-attrs? x1) x1 (get-attrs x1))))
+  (define attrs-tx2 (attrs->hash (if (txexpr-attrs? x2) x2 (get-attrs x2))))
+  (and 
+   (= (length (hash-keys attrs-tx1)) (length (hash-keys attrs-tx2)))
+   (for/and ([(key value) (in-hash attrs-tx1)])
+     (equal? (hash-ref attrs-tx2 key) value))))
+
 (define+provide+safe (attr-set tx key value)
   (txexpr? can-be-txexpr-attr-key? can-be-txexpr-attr-value? . -> . txexpr?)
   (define new-attrs 
@@ -222,7 +231,6 @@
                    (make-txexpr tag null (remove-attrs elements)))]
     [(txexpr-elements? x) (map remove-attrs x)]
     [else x]))
-
 
 ;; todo: exclude-proc will keep things out, but is there a way to keep things in?
 (define+provide+safe (map-elements/exclude proc x exclude-test)

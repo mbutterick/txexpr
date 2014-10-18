@@ -316,6 +316,21 @@ Returns @racket[#t] if the @racket[_attrs] contain a value for the given @racket
 ]
 
 @defproc[
+(attrs-equal?
+[attrs (or/c txexpr-attrs? txexpr?)]
+[other-attrs (or/c txexpr-attrs? txexpr?)])
+boolean?]
+Returns @racket[#t] if @racket[_attrs] and @racket[_other-attrs] contain the same keys and values, @racket[#f] otherwise. The order of attributes is irrelevant.
+
+@examples[#:eval my-eval
+(define tx1 '(div [[id "top"][class "red"]] "Hello"))
+(define tx2 '(p [[class "red"][id "top"]] "Hello"))
+(define tx3 '(p [[id "bottom"][class "red"]] "Hello"))
+(attrs-equal? tx1 tx2)
+(attrs-equal? tx1 tx3)
+]
+
+@defproc[
 (attr-ref
 [tx txexpr?]
 [key can-be-txexpr-attr-key?])

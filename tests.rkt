@@ -92,6 +92,31 @@
 (check-true (attrs-have-key? '(p ((color "red")(shape "circle"))) "color"))
 (check-false (attrs-have-key? '((color "red")(shape "circle")) 'nonexistent))
 
+(check-true (attrs-equal? '(p ((color "red")(shape "circle")))
+                          '(foo ((color "red")(shape "circle")))))
+
+(check-false (attrs-equal? '(p ((color "red")(shape "circle")))
+                          '(foo ((color "blue")(shape "circle")))))
+
+(check-true (attrs-equal? '(p ((color "red")(shape "circle")))
+                          '(foo ((shape "circle")(color "red")))))
+
+(check-false (attrs-equal? '(p ((color "red")(shape "circle")))
+                          '(foo ((color "red")))))
+
+(check-true (attrs-equal? '((color "red")(shape "circle"))
+                          '((color "red")(shape "circle"))))
+
+(check-false (attrs-equal? '((color "red")(shape "circle"))
+                          '((color "blue")(shape "circle"))))
+
+(check-true (attrs-equal? '((color "red")(shape "circle"))
+                          '((shape "circle")(color "red"))))
+
+(check-false (attrs-equal? '((color "red")(shape "circle"))
+                          '((color "red"))))
+
+
 
 (check-equal? (merge-attrs 'foo "bar") '((foo "bar")))
 (check-equal? (merge-attrs '(foo "bar")) '((foo "bar")))
