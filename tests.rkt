@@ -137,6 +137,12 @@
               '(p "boing" "boing" (em "boing")))
 
 
+(check-equal? (attr-ref* '(root ((foo "bar")) "hello" "world" (meta ((foo "zam")) "bar2") 
+                  (em ((foo "zam")) "goodnight" "moon")) 'foo) '("bar" "zam" "zam"))
+
+(check-equal? (attr-ref* '(root ((foo "bar")) "hello" "world" (meta ((foo "zam")) "bar2") 
+                  (em ((foo "zam")) "goodnight" "moon")) 'nonexistent-key) '())
+
 
 (define split-this-tx '(root (meta "foo" "bar") "hello" "world" (meta "foo2" "bar2") 
                   (em "goodnight" "moon" (meta "foo3" "bar3"))))

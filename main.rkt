@@ -1,6 +1,6 @@
 #lang racket/base
 (require (for-syntax racket/base))
-(require racket/match xml racket/string)
+(require racket/match xml racket/string racket/list racket/bool)
 
 (module+ safe (require racket/contract))
 
@@ -166,12 +166,6 @@
   (any/c . -> . boolean?)
   (ormap (λ(test) (test x)) (list txexpr-attr? txexpr-attrs? can-be-txexpr-attr-key? can-be-txexpr-attr-value?)))
 
-(define (flatten orig-sexp)
-  (let loop ([sexp orig-sexp] [acc null])
-    (cond [(null? sexp) acc]
-          [(pair? sexp) (loop (car sexp) (loop (cdr sexp) acc))]
-          [else (cons sexp acc)])))
-
 (define+provide+safe (attrs->hash . items)
   (() #:rest (listof can-be-txexpr-attrs?) . ->* . hash?)
   ;; can be liberal with input because they're all just nested key/value pairs
@@ -214,6 +208,15 @@
   (txexpr? can-be-txexpr-attr-key? . -> . txexpr-attr-value?)
   (with-handlers ([exn:fail? (λ(e) (error (format "attr-ref: no value found for key ~v" key)))])
     (hash-ref (attrs->hash (get-attrs tx)) key)))
+
+(define+provide+safe (attr-ref* tx key)
+  (txexpr? can-be-txexpr-attr-key? . -> . (listof txexpr-attr-value?))
+  (filter-not false? 
+              (flatten 
+               (let loop ([tx tx])
+                 (and (txexpr? tx)
+                      (cons (and (attrs-have-key? tx key)(attr-ref tx key)) 
+                            (map loop (get-elements tx))))))))
 
 ;; convert list of alternating keys & values to attr
 (define+provide+safe (merge-attrs . items)

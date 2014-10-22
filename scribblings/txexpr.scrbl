@@ -343,6 +343,19 @@ Given a @racket[_key], look up the corresponding @racket[_value] in the attribut
 (attr-ref tx 'nonexistent-key)
 ]
 
+@defproc[
+(attr-ref*
+[tx txexpr?]
+[key can-be-txexpr-attr-key?])
+(listof txexpr-attr-value?)]
+Like @racket[attr-ref], but returns a recursively gathered list of all the @racket[_value]s for that key within @racket[_tx]. Asking for a nonexistent key produces @racket[null].
+
+@examples[#:eval my-eval
+(define tx '(div [[class "red"]] "Hello" (em ([class "blue"]) "world")))
+(attr-ref* tx 'class)
+(attr-ref* tx 'nonexistent-key)
+]
+
 
 @defproc[
 (attr-set
