@@ -20,6 +20,11 @@
   (any/c . -> . boolean?)
   (symbol? x)) 
 
+(define+provide+safe (txexpr-tags? x)
+  (any/c . -> . boolean?)
+  (and (list? x) (andmap txexpr-tag? x)))
+
+
 (define+provide+safe (txexpr-attr? x)
   (any/c . -> . boolean?)
   (match x
