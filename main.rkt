@@ -54,6 +54,7 @@
     [(list elem ...) (andmap txexpr-element? elem)]
     [else #f]))
 
+
 (define (validate-txexpr-element x #:context [txexpr-context #f])
   ; ((any/c) (#:context (or/c #f txexpr?)) . ->* . txexpr-element?)
   (cond
@@ -68,6 +69,7 @@
   (any/c . -> . boolean?)
   (with-handlers ([exn:fail? (λ(exn) #f)])
     (and (validate-txexpr-element x) #t)))
+
 
 ;; is it a named x-expression?
 ;; todo: rewrite this recurively so errors can be pinpointed (for debugging)
@@ -94,13 +96,13 @@
 
 (define+provide+safe (make-txexpr tag [attrs null] [elements null])
   ;; todo?: use xexpr/c provides a nicer error message
-  ((symbol?) (txexpr-attrs? (listof txexpr-element?)) 
+  ((symbol?) (txexpr-attrs? txexpr-elements?) 
              . ->* . txexpr?)
   (filter (compose1 not null?) `(,tag ,attrs ,@elements)))
 
 
 (define+provide+safe (txexpr->values x)
-  (txexpr? . -> . (values symbol? txexpr-attrs? (listof txexpr-element?)))
+  (txexpr? . -> . (values symbol? txexpr-attrs? txexpr-elements?))
   (match 
       ; txexpr may or may not have attr
       ; if not, add null attr so that decomposition only handles one case
@@ -129,7 +131,7 @@
 
 
 (define+provide+safe (get-elements x)
-  (txexpr? . -> . (listof txexpr-element?))
+  (txexpr? . -> . txexpr-elements?)
   (define-values (tag attrs elements) (txexpr->values x))
   elements)
 
@@ -155,6 +157,8 @@
   (any/c . -> . boolean?)
   (string? x))
 
+(define (txexpr-attr-values? xs) (and (list? xs) (andmap txexpr-attr-value? xs)))
+
 (define+provide+safe (can-be-txexpr-attr-value? x) 
   (any/c . -> . boolean?)
   (can-be-txexpr-attr-key? x))
@@ -166,8 +170,10 @@
   (any/c . -> . boolean?)
   (ormap (λ(test) (test x)) (list txexpr-attr? txexpr-attrs? can-be-txexpr-attr-key? can-be-txexpr-attr-value?)))
 
+(define (list-of-can-be-txexpr-attrs? xs) (and (list? xs) (andmap can-be-txexpr-attrs? xs)))
+
 (define+provide+safe (attrs->hash . items)
-  (() #:rest (listof can-be-txexpr-attrs?) . ->* . hash?)
+  (() #:rest list-of-can-be-txexpr-attrs? . ->* . hash?)
   ;; can be liberal with input because they're all just nested key/value pairs
   ;; but still need this function to make sure that 'foo and "foo" are treated as the same hash key
   (define (make-key-value-list items)
@@ -210,7 +216,7 @@
     (hash-ref (attrs->hash (get-attrs tx)) key)))
 
 (define+provide+safe (attr-ref* tx key)
-  (txexpr? can-be-txexpr-attr-key? . -> . (listof txexpr-attr-value?))
+  (txexpr? can-be-txexpr-attr-key? . -> . txexpr-attr-values?)
   (filter-not false? 
               (flatten 
                (let loop ([tx tx])
@@ -220,7 +226,7 @@
 
 ;; convert list of alternating keys & values to attr
 (define+provide+safe (merge-attrs . items)
-  (() #:rest (listof can-be-txexpr-attrs?) . ->* . txexpr-attrs?)
+  (() #:rest list-of-can-be-txexpr-attrs? . ->* . txexpr-attrs?)
   (define attrs-hash (apply attrs->hash items))
   ;; sort needed for predictable results for unit tests
   (define sorted-hash-keys (sort (hash-keys attrs-hash) (λ(a b) (string<? (->string a) (->string b)))))
@@ -255,7 +261,7 @@
 
 ;; function to split tag out of txexpr
 (define+provide+safe (splitf-txexpr tx pred [proc (λ(x) null)])
-  ((txexpr? procedure?) (procedure?) . ->* . (values txexpr? (listof txexpr-element?)))
+  ((txexpr? procedure?) (procedure?) . ->* . (values txexpr? txexpr-elements?))
   (define matches null)
   (define (do-extraction x)
     (cond
