@@ -37,7 +37,6 @@
   (Any -> Txexpr)
   (define-syntax-rule (validate-txexpr-element-with-context e) (validate-txexpr-element e #:context x))
   (define-syntax-rule (validate-txexpr-attrs-with-context e) (validate-txexpr-attrs e #:context x))
-  
   (if (match x
         [(list (? symbol?)) #t]
         ;; todo: fix this condition
@@ -54,6 +53,7 @@
   ((Symbol) (Txexpr-Attrs (Listof Txexpr-Element)) . ->* . Txexpr)
   (cast (cons tag (append (if (empty? attrs) empty (list attrs)) elements)) Txexpr))
 
+
 (define/typed (txexpr->values x)
   (Txexpr -> (values Txexpr-Tag Txexpr-Attrs Txexpr-Elements))
   (match 
@@ -64,20 +64,24 @@
         [else `(,(car x) ,null ,@(cdr x))])
     [(list tag attr content ...) (values tag (cast attr Txexpr-Attrs) (cast content Txexpr-Elements))]))
 
+
 (define/typed (txexpr->list x)
   (Txexpr -> (List Txexpr-Tag Txexpr-Attrs Txexpr-Elements))
   (define-values (tag attrs content) (txexpr->values x))
   (list tag attrs content))
+
 
 ;; convenience functions to retrieve only one part of txexpr
 (define/typed (get-tag x)
   (Txexpr -> Txexpr-Tag)
   (car x))
 
+
 (define/typed (get-attrs x)
   (Txexpr -> Txexpr-Attrs)
   (define-values (tag attrs content) (txexpr->values x))
   attrs)
+
 
 (define/typed (get-elements x)
   (Txexpr -> Txexpr-Elements)
@@ -90,6 +94,7 @@
   (Can-Be-Txexpr-Attr-Key -> Txexpr-Attr-Key)
   (if (string? x) (string->symbol x) x))
 
+
 (define/typed (->txexpr-attr-value x)
   (Can-Be-Txexpr-Attr-Value -> Txexpr-Attr-Value)
   (->string x))
@@ -100,21 +105,20 @@
   (if (symbol? x) (symbol->string x) x))
 
 
-;; broken: needs flatten
 (define/typed (attrs->hash . items-in)
   (Can-Be-Txexpr-Attr * -> Txexpr-Attr-Hash)
   ;; can be liberal with input because they're all just nested key/value pairs
   ;; but still need this function to make sure that 'foo and "foo" are treated as the same hash key
   (define items (reverse
-                 (for/fold ([items : (Listof (U Can-Be-Txexpr-Attr-Key Can-Be-Txexpr-Attr-Value)) null])([i (in-list items-in)])
-                  (cond
-                    [(txexpr-attr? i) (append i items)]
-                    [(txexpr-attrs? i) (map (λ([i : Txexpr-Attr]) (append i items)) i)]
-                    [else (cons i items)]))))
-  
+                 (for/fold ([items : (Listof (U Can-Be-Txexpr-Attr-Key Can-Be-Txexpr-Attr-Value)) null])
+                           ([i (in-list items-in)])
+                   (cond
+                     [(txexpr-attr? i) (append i items)]
+                     [(txexpr-attrs? i) (append (append* i) items)]
+                     [else (cons i items)]))))
   (define/typed (make-key-value-list items)
-    (Txexpr-Attrs -> (Listof (Pairof Txexpr-Attr-Key Txexpr-Attr-Value)))
-    (if (null? items)
+    ((Listof (U Can-Be-Txexpr-Attr-Key Can-Be-Txexpr-Attr-Value)) -> (Listof (Pairof Txexpr-Attr-Key Txexpr-Attr-Value)))
+    (if (>= (length items) 2)
         null
         (let ([key (->txexpr-attr-key (car items))]
               [value (->txexpr-attr-value (cadr items))]
@@ -122,19 +126,20 @@
           (cons (cons key value) (make-key-value-list rest)))))
   (make-immutable-hash (make-key-value-list items)))
 
-;; broken
-#;(define/typed (hash->attrs hash)
-  (Txexpr-Attr-Hash -> Txexpr-Attrs)
-  (hash-map hash list))
 
-;; broken. needs txexpr-attrs? filter to work
-#;(define/typed (attrs-have-key? x key)
+(define/typed (hash->attrs attr-hash)
+  (Txexpr-Attr-Hash -> Txexpr-Attrs)
+  (for/list : Txexpr-Attrs ([(k v) (in-hash attr-hash)])
+    (list k v)))
+
+
+(define/typed (attrs-have-key? x key)
   ((U Txexpr-Attrs Txexpr) Can-Be-Txexpr-Attr-Key -> Boolean)
   (define attrs (if (txexpr-attrs? x) x (get-attrs x)))
   (hash-has-key? (attrs->hash attrs) (->txexpr-attr-key key)))
 
-;; broken. needs txexpr-attrs? filter to work
-#;(define/typed (attrs-equal? x1 x2)
+
+(define/typed (attrs-equal? x1 x2)
   ((U Txexpr-Attrs Txexpr) (U Txexpr-Attrs Txexpr) -> Boolean)
   (define attrs-tx1 (attrs->hash (if (txexpr-attrs? x1) x1 (get-attrs x1))))
   (define attrs-tx2 (attrs->hash (if (txexpr-attrs? x2) x2 (get-attrs x2))))
@@ -143,63 +148,48 @@
    (for/and ([(key value) (in-hash attrs-tx1)])
      (equal? (hash-ref attrs-tx2 key) value))))
 
-;; broken. needs txexpr-attrs? filter to work
-#;(define/typed (attrs-equal? x1 x2)
-  ((U Txexpr-Attrs Txexpr) (U Txexpr-Attrs Txexpr) -> Boolean)
-  (define attrs-tx1 (attrs->hash (if (txexpr-attrs? x1) x1 (get-attrs x1))))
-  (define attrs-tx2 (attrs->hash (if (txexpr-attrs? x2) x2 (get-attrs x2))))
-  (and 
-   (= (length (hash-keys attrs-tx1)) (length (hash-keys attrs-tx2)))
-   (for/and ([(key value) (in-hash attrs-tx1)])
-     (equal? (hash-ref attrs-tx2 key) value))))
 
-;; broken. needs hash->attrs
-#;(define/typed (attr-set tx key value)
+(define/typed (attr-set tx key value)
   (Txexpr Can-Be-Txexpr-Attr-Key Can-Be-Txexpr-Attr-Value -> Txexpr)
   (define new-attrs 
     (hash->attrs (hash-set (attrs->hash (get-attrs tx)) (->txexpr-attr-key key) (->txexpr-attr-value value))))
   (make-txexpr (get-tag tx) new-attrs (get-elements tx)))
 
 
-;; broken: needs attrs->hash
-#;(define/typed (attr-ref tx key)
+(define/typed (attr-ref tx key)
   (Txexpr Can-Be-Txexpr-Attr-Key -> Txexpr-Attr-Value)
   (with-handlers ([exn:fail? (λ(e) (error (format "attr-ref: no value found for key ~v" key)))])
-    (hash-ref (attrs->hash (get-attrs tx)) key)))
+    (hash-ref (attrs->hash (get-attrs tx)) (->txexpr-attr-key key))))
 
-;; broken: needs attrs-have-key?
-#;(define/typed (attr-ref* tx key)
+
+(define/typed (attr-ref* tx key)
   (Txexpr Can-Be-Txexpr-Attr-Key -> (Listof Txexpr-Attr-Value))
-  (filter-not false? 
-              (flatten 
-               (let loop ([tx tx])
-                 (and (txexpr? tx)
-                      (cons (and (attrs-have-key? tx key)(attr-ref tx key)) 
-                            (map loop (get-elements tx))))))))
+  (define results : (Listof Txexpr-Attr-Value) empty)
+  (let loop : Void ([tx : Xexpr tx])
+    (when (and (txexpr? tx) (attrs-have-key? tx key) (attr-ref tx key))
+      (set! results (cons (attr-ref tx key) results))
+      (map (λ([e : Txexpr-Element]) (loop e)) (get-elements tx))
+      (void)))
+  results)
 
 
 ;; convert list of alternating keys & values to attr
-;; broken: needs attrs->hash
-#;(define/typed (merge-attrs . items)
+(define/typed (merge-attrs . items)
   (Txexpr-Attr * -> Txexpr-Attrs)
   (define attrs-hash (apply attrs->hash items))
   ;; sort needed for predictable results for unit tests
-  (define sorted-hash-keys (sort (hash-keys attrs-hash) (λ(a b) (string<? (->string a) (->string b)))))
-  `(,@(map (λ(key) (list key (hash-ref attrs-hash key))) sorted-hash-keys)))
+  (define sorted-hash-keys (sort (hash-keys attrs-hash) (λ([a : Txexpr-Tag][b : Txexpr-Tag]) (string<? (->string a) (->string b)))))
+  `(,@(map (λ([key : Txexpr-Tag]) (list key (hash-ref attrs-hash key))) sorted-hash-keys)))
 
-;; broken
-#;(define/typed (remove-attrs x)
-  (case-> (Xexpr -> Xexpr)
-          ((Listof Xexpr) -> (Listof Xexpr))
-          ((Listof Xexpr) -> Xexpr))
-  (cond
-    [(txexpr? x) (let-values ([(tag attr elements) (txexpr->values x)])
-                   (make-txexpr tag null (remove-attrs elements)))]
-    [(txexpr-elements? x) (map remove-attrs x)]
-    [else x]))
+
+(define/typed (remove-attrs x)
+  (Xexpr -> Xexpr)
+  (if (txexpr? x)
+      (let-values ([(tag attr elements) (txexpr->values x)])
+        (make-txexpr tag null (map remove-attrs elements)))
+      x))
 
 #|
-
 
 ;; todo: exclude-proc will keep things out, but is there a way to keep things in?
 (define+provide+safe (map-elements/exclude proc x exclude-test)
