@@ -4,7 +4,6 @@
 (require-via-wormhole "../typed/txexpr/main.rkt")
 
 (provide+safe
- [xexpr? predicate/c]
  [txexpr? predicate/c]
  [txexpr-short? predicate/c]
  [txexpr-tag? predicate/c]
