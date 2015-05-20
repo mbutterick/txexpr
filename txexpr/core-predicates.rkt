@@ -16,6 +16,9 @@
 (define (txexpr-tag? x)
   (symbol? x))
 
+(define (txexpr-tags? x)
+  (and (list? x) (andmap txexpr-tag? x)))
+
 (define (txexpr-attr? x)
   (match x
     [(list (? symbol?) (? string?)) #t]

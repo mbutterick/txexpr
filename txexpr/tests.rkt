@@ -35,6 +35,9 @@
  (check-false (txexpr-tag? "foo"))
  (check-false (txexpr-tag? 3))
  
+ (check-false (txexpr-tags? 'foo))
+ (check-true (txexpr-tags? '(foo bar)))
+ 
  (check-true (txexpr-attr? '(key "value")))
  (check-false (txexpr-attr? '(key "value" "another")))
  (check-false (txexpr-attr? '(key 0 "value")))

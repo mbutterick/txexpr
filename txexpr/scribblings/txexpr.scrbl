@@ -138,6 +138,11 @@ Predicates for @racket[_txexpr]s that implement this grammar:
 @deftogether[(
 
 @defproc[
+(txexpr-tags?
+[v any/c])
+boolean?]
+
+@defproc[
 (txexpr-attrs?
 [v any/c])
 boolean?]
@@ -147,7 +152,7 @@ boolean?]
 [v any/c])
 boolean?]
 )]
-Shorthand for @code{(listof txexpr-attr?)} and @code{(listof txexpr-element?)}.
+Shorthand for @code{(listof txexpr-tag?)}, @code{(listof txexpr-attr?)}, and @code{(listof txexpr-element?)}.
 
 
 

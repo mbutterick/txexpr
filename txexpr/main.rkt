@@ -8,6 +8,7 @@
  [txexpr? predicate/c]
  [txexpr-short? predicate/c]
  [txexpr-tag? predicate/c]
+ [txexpr-tags? predicate/c]
  [txexpr-attr? predicate/c]
  [txexpr-attrs? predicate/c]
  [txexpr-element? predicate/c]
