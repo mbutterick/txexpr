@@ -3,8 +3,9 @@
 (require racket/match racket/string racket/list racket/bool "core-predicates.rkt")
 (provide (all-defined-out) (all-from-out "core-predicates.rkt"))
 (require typed/sugar/debug)
+
 (define/typed (validate-txexpr-attrs x #:context [txexpr-context #f])
-  (Txexpr-Attrs #:context Any  -> Txexpr-Attrs)
+  (Txexpr-Attrs [#:context Any]  -> Txexpr-Attrs)
   (define/typed (make-reason)
     (-> String)
     (if (not (list? x)) 
@@ -21,7 +22,7 @@
 
 
 (define/typed (validate-txexpr-element x #:context [txexpr-context #f])
-  (Txexpr-Element #:context Any -> Txexpr-Element)
+  (Txexpr-Element [#:context Any] -> Txexpr-Element)
   (cond
     [(or (string? x) (txexpr? x) (symbol? x)
          (valid-char? x) (cdata? x)) x]
@@ -44,12 +45,18 @@
     [else (error 'validate-txexpr (format "~v is not a list starting with a symbol" x))]))
 
 
-(define/typed (make-txexpr tag [attrs null] [elements null])
-  (Symbol Txexpr-Attrs (Listof Txexpr-Element) -> Txexpr)
-  (define result (cons tag (append (if (empty? attrs) empty (list attrs)) elements)))
-  (if (txexpr? result)
-      result
-      (error 'make-txexpr "This can't happen")))
+(define/typed make-txexpr
+  (case-> (Symbol -> Txexpr)
+          (Symbol Txexpr-Attrs -> Txexpr)
+          (Symbol Txexpr-Attrs (Listof Txexpr-Element) -> Txexpr))
+  (case-lambda
+    [(tag) (make-txexpr tag null null)]
+    [(tag attrs) (make-txexpr tag attrs null)]
+    [(tag attrs elements)
+     (define result (cons tag (append (if (empty? attrs) empty (list attrs)) elements)))
+     (if (txexpr? result)
+         result
+         (error 'make-txexpr "This can't happen"))]))
 
 
 (define/typed (txexpr->values x)
@@ -105,7 +112,7 @@
   ;; but still need this function to make sure that 'foo and "foo" are treated as the same hash key
   (define items (reverse
                  (for/fold: ([items : (Listof (U Can-Be-Txexpr-Attr-Key Can-Be-Txexpr-Attr-Value)) null])
-                           ([i (in-list items-in)])
+                   ([i (in-list items-in)])
                    (cond
                      [(txexpr-attr? i) (append (reverse i) items)]
                      [(txexpr-attrs? i) (append (append* (map (λ:([a : Txexpr-Attr]) (reverse a)) i)) items)]
@@ -205,22 +212,26 @@
 
 ;; function to split tag out of txexpr
 (define deleted-signal (gensym))
-(define/typed (splitf-txexpr tx pred [proc (λ:([x : Xexpr]) deleted-signal)])
-  (Txexpr (Xexpr -> Boolean) (Xexpr -> Xexpr) -> (values Txexpr Txexpr-Elements))
-  (define: matches : Txexpr-Elements null)
-  (define/typed (do-extraction x)
-    (Xexpr -> Xexpr)
-    (cond
-      [(pred x) (begin  ; store matched item and return processed value
-                  (set! matches (cons x matches))
-                  (proc x))]
-      [(txexpr? x) (let-values([(tag attr elements) (txexpr->values x)]) 
-                     (make-txexpr tag attr (filter (λ:([e : Xexpr]) (not (equal? e deleted-signal))) (map do-extraction elements))))]
-      [else x]))
-  (define tx-extracted (do-extraction tx)) ;; do this first to fill matches
-  (values (if (txexpr? tx-extracted)
-              tx-extracted
-              (error 'splitf-txexpr "Can't get here")) (reverse matches)))
+(define/typed splitf-txexpr
+  (case-> (Txexpr (Xexpr -> Boolean) -> (values Txexpr Txexpr-Elements))
+          (Txexpr (Xexpr -> Boolean) (Xexpr -> Xexpr) -> (values Txexpr Txexpr-Elements)))
+  (case-lambda
+    [(tx pred) (splitf-txexpr tx pred (λ:([x : Xexpr]) deleted-signal))]
+    [(tx pred proc)
+     (define: matches : Txexpr-Elements null)
+     (define/typed (do-extraction x)
+       (Xexpr -> Xexpr)
+       (cond
+         [(pred x) (begin  ; store matched item and return processed value
+                     (set! matches (cons x matches))
+                     (proc x))]
+         [(txexpr? x) (let-values([(tag attr elements) (txexpr->values x)]) 
+                        (make-txexpr tag attr (filter (λ:([e : Xexpr]) (not (equal? e deleted-signal))) (map do-extraction elements))))]
+         [else x]))
+     (define: tx-extracted : Xexpr (do-extraction tx)) ;; do this first to fill matches
+     (values (if (txexpr? tx-extracted)
+                 tx-extracted
+                 (error 'splitf-txexpr "Can't get here")) (reverse matches))]))
 
 
 (define/typed (xexpr->html x)
