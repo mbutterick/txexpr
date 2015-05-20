@@ -7,6 +7,16 @@
      (with-syntax ([sym (generate-temporary)]) 
        #'(begin
            (module sym racket
+             (require rackunit txexpr)
+             exprs ...)
+           (require 'sym)))]))
+
+(define-syntax (eval-as-untyped-safe stx)
+  (syntax-case stx ()
+    [(_ exprs ...)
+     (with-syntax ([sym (generate-temporary)]) 
+       #'(begin
+           (module sym racket
              (require rackunit (submod txexpr safe))
              exprs ...)
            (require 'sym)))]))
@@ -24,7 +34,8 @@
 (define-syntax-rule (eval-as-typed-and-untyped exprs ...)
   (begin
     (eval-as-typed exprs ...)
-    (eval-as-untyped exprs ...)))
+    (eval-as-untyped exprs ...)
+    (eval-as-untyped-safe exprs ...)))
 
 
 (eval-as-typed-and-untyped
