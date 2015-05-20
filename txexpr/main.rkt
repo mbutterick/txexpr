@@ -1,15 +1,42 @@
 #lang racket/base
-(require sugar/include sugar/define xml)
+(require sugar/define)
 
-(define+provide+safe (txexpr? x)
-  (any/c . -> . boolean?)
-  (with-handlers ([exn:fail? (λ(exn) #f)])
-    (and (validate-txexpr x) #t)))
+(require-via-wormhole "../typed/txexpr/main.rkt")
 
-(define+provide+safe (txexpr-attr? x)
-  (any/c . -> . boolean?)
-  (match x
-    [(list (? symbol?) (? string?)) #t]
-    [else #f]))
-
-(include-without-lang-line "../typed/txexpr/main.rkt")
+(provide+safe
+ [xexpr? predicate/c]
+ [txexpr? predicate/c]
+ [txexpr-short? predicate/c]
+ [txexpr-tag? predicate/c]
+ [txexpr-attr? predicate/c]
+ [txexpr-attrs? predicate/c]
+ [txexpr-element? predicate/c]
+ [txexpr-elements? predicate/c]
+ [validate-txexpr (any/c . -> . txexpr?)]
+ [make-txexpr ((symbol?) (txexpr-attrs? txexpr-elements?) . ->* . txexpr?)]
+ [txexpr->values (txexpr? . -> . (values symbol? txexpr-attrs? txexpr-elements?))]
+ [txexpr->list (txexpr? . -> . list?)]
+ [get-tag (txexpr? . -> . txexpr-tag?)]
+ [get-attrs (txexpr? . -> . txexpr-attrs?)]
+ [get-elements (txexpr? . -> . txexpr-elements?)]
+ [txexpr-attr-key? predicate/c]
+ [txexpr-attr-value? predicate/c]
+ [can-be-txexpr-attr-key? predicate/c]
+ [can-be-txexpr-attr-value? predicate/c]
+ [->txexpr-attr-key (can-be-txexpr-attr-key? . -> . txexpr-attr-key?)]
+ [->txexpr-attr-value (can-be-txexpr-attr-value? . -> . txexpr-attr-value?)]
+ [can-be-txexpr-attrs? predicate/c]
+ [list-of-can-be-txexpr-attrs? predicate/c]
+ [attrs->hash (() #:rest (listof can-be-txexpr-attrs?) . ->* . hash?)]
+ [hash->attrs (hash? . -> . txexpr-attrs?)]
+ [attr-ref (txexpr? can-be-txexpr-attr-key? . -> . txexpr-attr-value?)]
+ [attr-ref*  (txexpr? can-be-txexpr-attr-key? . -> . txexpr-attr-values?)]
+ [attrs-have-key? ((or/c txexpr-attrs? txexpr?) can-be-txexpr-attr-key? . -> . boolean?)]
+ [attrs-equal?  ((or/c txexpr-attrs? txexpr?) (or/c txexpr-attrs? txexpr?) . -> . boolean?)]
+ [attr-set (txexpr? can-be-txexpr-attr-key? can-be-txexpr-attr-value? . -> . txexpr?)]
+ [merge-attrs (() #:rest list-of-can-be-txexpr-attrs? . ->* . txexpr-attrs?)]
+ [remove-attrs (txexpr? . -> . txexpr?)]
+ [map-elements/exclude (procedure? txexpr? procedure? . -> . txexpr?)]
+ [map-elements (procedure? txexpr? . -> . txexpr?)]
+ [splitf-txexpr ((txexpr? procedure?) (procedure?) . ->* . (values txexpr? txexpr-elements?))]
+ [xexpr->html (xexpr? . -> . string?)])

@@ -1,6 +1,6 @@
 #lang scribble/manual
 
-@(require scribble/eval (for-label racket txexpr xml))
+@(require scribble/eval (for-label racket txexpr xml (only-in typed/racket require/typed)))
 
 @(define my-eval (make-base-eval))
 @(my-eval `(require txexpr xml))
@@ -10,7 +10,7 @@
 
 @author[(author+email "Matthew Butterick" "mb@mbtype.com")]
 
-@defmodule[#:multi (txexpr (submod txexpr safe))]
+@defmodule[#:multi (txexpr (submod txexpr safe) typed/txexpr)]
 
 A set of small but handy functions for improving the readability and reliability of programs that operate on tagged X-expressions (for short, @italic{txexpr}s).
 
@@ -24,9 +24,13 @@ After that, you can update the package from the command line:
 
 @section{Importing the module}
 
-The module operates in two modes: fast and safe. Fast mode is the default, which you get by importing the module in the usual way: @code{(require txexpr)}. 
+The module can be invoked three ways: fast, safe, and typed. 
+
+Fast mode is the default, which you get by importing the module in the usual way: @code{(require txexpr)}. 
 
 Safe mode enables the function contracts documented below. Use safe mode by importing the module as @code{(require (submod txexpr safe))}.
+
+The typed version is invoked as @code{(require typed/txexpr)}. The typed version is implemented ``natively'' in the sense that it is compiled separately with type annotations. It is not a @racket[require/typed] wrapper around the untyped code. This avoids the contract barrier that is otherwise automatically imposed between typed and untyped code.
 
 
 @section{What’s a txexpr?}

@@ -2,7 +2,7 @@
 (require (for-syntax typed/racket/base) typed/sugar/define)
 (require racket/match racket/string racket/list racket/bool "core-predicates.rkt")
 (provide (all-defined-out) (all-from-out "core-predicates.rkt"))
-
+(require typed/sugar/debug)
 (define/typed (validate-txexpr-attrs x #:context [txexpr-context #f])
   ((Txexpr-Attrs) (#:context Any) . ->* . Txexpr-Attrs)
   (define/typed (make-reason)
@@ -14,7 +14,7 @@
                                                                                                      "are not valid attributes"
                                                                                                      "is not in the form '(symbol \"string\")")))))
   (cond
-    [(and (list? x) (> 0 (length x)) (andmap txexpr-attr? x)) x]
+    [(and (list? x) (> (length x) 0) (andmap txexpr-attr? x)) x]
     [else (error (string-append "validate-txexpr-attrs: "
                                 (if txexpr-context (format "in ~v, " txexpr-context) "")
                                 (format "~v is not a valid list of attributes ~a" x (make-reason))))]))

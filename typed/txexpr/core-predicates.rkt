@@ -26,8 +26,6 @@
 (provide (all-from-out xml) cdata? xexpr->string)
 
 
-
-
 (define-type Valid-Char Natural) ;; overinclusive but that's as good as it gets
 (define-type Txexpr-Tag Symbol)
 (define-type Txexpr-Attr-Key Symbol)
