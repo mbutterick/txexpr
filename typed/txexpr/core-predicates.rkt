@@ -53,14 +53,19 @@
      comment
      p-i))
 
-
+(define-predicate xexpr? Xexpr)
 (define-predicate txexpr? Txexpr)
 (define-predicate txexpr-short? Txexpr-Short)
 (define-predicate txexpr-tag? Txexpr-Tag)
 (define-predicate txexpr-tags? (Listof Txexpr-Tag))
 (define-predicate txexpr-attr? Txexpr-Attr)
 (define-predicate txexpr-attrs? Txexpr-Attrs)
-(define-predicate txexpr-element? Xexpr)
+(define-predicate Valid-Char? Valid-Char)
+(define/typed (txexpr-element? x)
+  (Any -> Boolean)
+  (if (xexpr? x)
+      (if (Valid-Char? x) (valid-char? x) #t)
+      #f))
 (define-predicate txexpr-elements? (Listof Xexpr))
 (define-predicate txexpr-attr-key? Txexpr-Attr-Key)
 (define-predicate txexpr-attr-value? Txexpr-Attr-Value)

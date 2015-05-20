@@ -164,7 +164,7 @@
       (set! results (cons (attr-ref tx key) results))
       (map (λ([e : Txexpr-Element]) (loop e)) (get-elements tx))
       (void)))
-  results)
+  (reverse results))
 
 
 ;; convert list of alternating keys & values to attr
