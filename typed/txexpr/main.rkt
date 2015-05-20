@@ -4,7 +4,7 @@
 (provide (all-defined-out) (all-from-out "core-predicates.rkt"))
 (require typed/sugar/debug)
 (define/typed (validate-txexpr-attrs x #:context [txexpr-context #f])
-  ((Txexpr-Attrs) (#:context Any) . ->* . Txexpr-Attrs)
+  (Txexpr-Attrs #:context Any  -> Txexpr-Attrs)
   (define/typed (make-reason)
     (-> String)
     (if (not (list? x)) 
@@ -21,7 +21,7 @@
 
 
 (define/typed (validate-txexpr-element x #:context [txexpr-context #f])
-  ((Txexpr-Element) (#:context Any) . ->* . Txexpr-Element)
+  (Txexpr-Element #:context Any -> Txexpr-Element)
   (cond
     [(or (string? x) (txexpr? x) (symbol? x)
          (valid-char? x) (cdata? x)) x]
@@ -40,12 +40,12 @@
     [(txexpr-short? x) x]
     [(txexpr? x) (and
                   (validate-txexpr-attrs-with-context (get-attrs x))
-                  (andmap (λ([e : Txexpr-Element]) (validate-txexpr-element-with-context e)) (get-elements x)) x)]
+                  (andmap (λ:([e : Txexpr-Element]) (validate-txexpr-element-with-context e)) (get-elements x)) x)]
     [else (error 'validate-txexpr (format "~v is not a list starting with a symbol" x))]))
 
 
 (define/typed (make-txexpr tag [attrs null] [elements null])
-  ((Symbol) (Txexpr-Attrs (Listof Txexpr-Element)) . ->* . Txexpr)
+  (Symbol Txexpr-Attrs (Listof Txexpr-Element) -> Txexpr)
   (define result (cons tag (append (if (empty? attrs) empty (list attrs)) elements)))
   (if (txexpr? result)
       result
@@ -104,11 +104,11 @@
   ;; can be liberal with input because they're all just nested key/value pairs
   ;; but still need this function to make sure that 'foo and "foo" are treated as the same hash key
   (define items (reverse
-                 (for/fold ([items : (Listof (U Can-Be-Txexpr-Attr-Key Can-Be-Txexpr-Attr-Value)) null])
+                 (for/fold: ([items : (Listof (U Can-Be-Txexpr-Attr-Key Can-Be-Txexpr-Attr-Value)) null])
                            ([i (in-list items-in)])
                    (cond
                      [(txexpr-attr? i) (append (reverse i) items)]
-                     [(txexpr-attrs? i) (append (append* (map (λ([a : Txexpr-Attr]) (reverse a)) i)) items)]
+                     [(txexpr-attrs? i) (append (append* (map (λ:([a : Txexpr-Attr]) (reverse a)) i)) items)]
                      [else (cons i items)]))))
   (define/typed (make-key-value-list items)
     ((Listof (U Can-Be-Txexpr-Attr-Key Can-Be-Txexpr-Attr-Value)) -> (Listof (Pairof Txexpr-Attr-Key Txexpr-Attr-Value)))
@@ -123,8 +123,7 @@
 
 (define/typed (hash->attrs attr-hash)
   (Txexpr-Attr-Hash -> Txexpr-Attrs)
-  (for/list : Txexpr-Attrs ([(k v) (in-hash attr-hash)])
-    (list k v)))
+  (map (λ:([k : Txexpr-Attr-Key]) (list k (hash-ref attr-hash k))) (hash-keys attr-hash)))
 
 
 (define/typed (attrs-have-key? x key)
@@ -158,11 +157,11 @@
 
 (define/typed (attr-ref* tx key)
   (Txexpr Can-Be-Txexpr-Attr-Key -> (Listof Txexpr-Attr-Value))
-  (define results : (Listof Txexpr-Attr-Value) empty)
-  (let loop : Void ([tx : Xexpr tx])
+  (define: results : (Listof Txexpr-Attr-Value) empty)
+  (let: loop : Void ([tx : Xexpr tx])
     (when (and (txexpr? tx) (attrs-have-key? tx key) (attr-ref tx key))
       (set! results (cons (attr-ref tx key) results))
-      (map (λ([e : Txexpr-Element]) (loop e)) (get-elements tx))
+      (map (λ:([e : Txexpr-Element]) (loop e)) (get-elements tx))
       (void)))
   (reverse results))
 
@@ -172,8 +171,8 @@
   (Can-Be-Txexpr-Attr * -> Txexpr-Attrs)
   (define attrs-hash (apply attrs->hash items))
   ;; sort needed for predictable results for unit tests
-  (define sorted-hash-keys (sort (hash-keys attrs-hash) (λ([a : Txexpr-Tag][b : Txexpr-Tag]) (string<? (->string a) (->string b)))))
-  `(,@(map (λ([key : Txexpr-Tag]) (list key (hash-ref attrs-hash key))) sorted-hash-keys)))
+  (define sorted-hash-keys (sort (hash-keys attrs-hash) (λ:([a : Txexpr-Tag][b : Txexpr-Tag]) (string<? (->string a) (->string b)))))
+  `(,@(map (λ:([key : Txexpr-Tag]) (list key (hash-ref attrs-hash key))) sorted-hash-keys)))
 
 
 (define/typed (remove-attrs x)
@@ -193,7 +192,7 @@
          x
          (let-values ([(tag attr elements) (txexpr->values x)])
            (make-txexpr tag attr 
-                        (map (λ([x : Xexpr])(map-elements/exclude proc x exclude-test)) elements))))]
+                        (map (λ:([x : Xexpr])(map-elements/exclude proc x exclude-test)) elements))))]
     ;; externally the function only accepts txexpr,
     ;; but internally we don't care
     [else (proc x)]))
@@ -206,9 +205,9 @@
 
 ;; function to split tag out of txexpr
 (define deleted-signal (gensym))
-(define/typed (splitf-txexpr tx pred [proc (λ([x : Xexpr]) deleted-signal)])
-  ((Txexpr (Xexpr -> Boolean)) ((Xexpr -> Xexpr)) . ->* . (values Txexpr Txexpr-Elements))
-  (define matches : Txexpr-Elements null)
+(define/typed (splitf-txexpr tx pred [proc (λ:([x : Xexpr]) deleted-signal)])
+  (Txexpr (Xexpr -> Boolean) (Xexpr -> Xexpr) -> (values Txexpr Txexpr-Elements))
+  (define: matches : Txexpr-Elements null)
   (define/typed (do-extraction x)
     (Xexpr -> Xexpr)
     (cond
@@ -216,7 +215,7 @@
                   (set! matches (cons x matches))
                   (proc x))]
       [(txexpr? x) (let-values([(tag attr elements) (txexpr->values x)]) 
-                     (make-txexpr tag attr (filter (λ([e : Xexpr]) (not (equal? e deleted-signal))) (map do-extraction elements))))]
+                     (make-txexpr tag attr (filter (λ:([e : Xexpr]) (not (equal? e deleted-signal))) (map do-extraction elements))))]
       [else x]))
   (define tx-extracted (do-extraction tx)) ;; do this first to fill matches
   (values (if (txexpr? tx-extracted)
@@ -232,7 +231,7 @@
       [(cdata? x) x]
       [(string? x) (cdata #f #f  (format "<![CDATA[~a]]>" x))]
       [else x]))
-  (xexpr->string (let loop : Xexpr ([x : Xexpr x])
+  (xexpr->string (let: loop : Xexpr ([x : Xexpr x])
                    (cond
                      [(txexpr? x) (if (member (get-tag x) '(script style))
                                       (make-txexpr (get-tag x) (get-attrs x) (map ->cdata (get-elements x)))

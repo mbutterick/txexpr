@@ -30,7 +30,7 @@
 (define-type Txexpr-Tag Symbol)
 (define-type Txexpr-Attr-Key Symbol)
 (define-type Txexpr-Attr-Value String)
-(define-type Txexpr-Attr (Pairof Txexpr-Attr-Key (Pairof Txexpr-Attr-Value Null)))
+(define-type Txexpr-Attr (List Txexpr-Attr-Key Txexpr-Attr-Value))
 (define-predicate Txexpr-Attr? Txexpr-Attr)
 (define-type Can-Be-Txexpr-Attr-Key (U Symbol String))
 (define-type Can-Be-Txexpr-Attr-Value (U Symbol String))
@@ -41,15 +41,15 @@
 (define-type Txexpr-Full (List* Txexpr-Tag Txexpr-Attrs (Listof Xexpr)))
 (define-type Txexpr-Short (Pairof Txexpr-Tag (Listof Xexpr)))
 (define-type Txexpr (U Txexpr-Full Txexpr-Short))
-(define-type Xexpr
+(define-type Xexpr (Rec X
   (U String
-     Txexpr-Full
-     Txexpr-Short
+     (List* Txexpr-Tag Txexpr-Attrs (Listof X))
+     (Pairof Txexpr-Tag (Listof X))
      Symbol
      Valid-Char
      cdata
      comment
-     p-i))
+     p-i)))
 
 (define-predicate xexpr? Xexpr)
 (define-predicate txexpr? Txexpr)
