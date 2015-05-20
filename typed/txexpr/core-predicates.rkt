@@ -1,10 +1,18 @@
 #lang typed/racket/base
-(require (for-syntax racket/base) racket/match)
-(provide (all-defined-out) valid-char? cdata?)
+(require (for-syntax racket/base) racket/match typed/sugar/define)
+(provide (all-defined-out))
+
+; Section 2.2 of XML 1.1
+; (XML 1.0 is slightly different and more restrictive)
+(define/typed (valid-char? i)
+  (Any -> Boolean)
+  (and (exact-nonnegative-integer? i)
+       (or (<= #x1     i #xD7FF)
+           (<= #xE000  i #xFFFD)
+           (<= #x10000 i #x10FFFF))))
 
 (require/typed
  xml
- [valid-char? (Any -> Boolean)]
  [#:struct location ([line : (Option Natural)]
                      [char : (Option Natural)]
                      [offset : Natural])]
@@ -13,7 +21,12 @@
  [#:struct (cdata source) ([string : String])]
  [#:struct comment ([text : String])]
  [#:struct (p-i source) ([target-name : Symbol]
-                         [instruction : String])])
+                         [instruction : String])]
+ [xexpr->string (Xexpr -> String)])
+(provide (all-from-out xml) cdata? xexpr->string)
+
+
+
 
 (define-type Valid-Char Natural) ;; overinclusive but that's as good as it gets
 (define-type Txexpr-Tag Symbol)
@@ -40,17 +53,9 @@
      comment
      p-i))
 
-(define-syntax (define/typed stx)
-  (syntax-case stx ()
-    [(_ (proc-name arg ... . rest-arg) type-expr body ...)
-     #'(define/typed proc-name type-expr
-         (λ(arg ... . rest-arg) body ...))]
-    [(_ proc-name type-expr body ...)
-     #'(begin
-         (: proc-name type-expr)
-         (define proc-name body ...))]))
 
 (define-predicate txexpr? Txexpr)
+(define-predicate txexpr-short? Txexpr-Short)
 (define-predicate txexpr-tag? Txexpr-Tag)
 (define-predicate txexpr-tags? (Listof Txexpr-Tag))
 (define-predicate txexpr-attr? Txexpr-Attr)

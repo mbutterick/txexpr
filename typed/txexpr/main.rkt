@@ -1,11 +1,10 @@
 #lang typed/racket/base
-(require (for-syntax typed/racket/base))
+(require (for-syntax typed/racket/base) typed/sugar/define)
 (require racket/match racket/string racket/list racket/bool "core-predicates.rkt")
 (provide (all-defined-out) (all-from-out "core-predicates.rkt"))
 
-
 (define/typed (validate-txexpr-attrs x #:context [txexpr-context #f])
-  ((Any) (#:context Boolean) . ->* . Txexpr-Attrs)
+  ((Txexpr-Attrs) (#:context Any) . ->* . Txexpr-Attrs)
   (define/typed (make-reason)
     (-> String)
     (if (not (list? x)) 
@@ -22,10 +21,10 @@
 
 
 (define/typed (validate-txexpr-element x #:context [txexpr-context #f])
-  ((Any) (#:context Any) . ->* . Txexpr-Element)
+  ((Txexpr-Element) (#:context Any) . ->* . Txexpr-Element)
   (cond
     [(or (string? x) (txexpr? x) (symbol? x)
-         (valid-char? x) (cdata? x)) (cast x Txexpr-Element)]
+         (valid-char? x) (cdata? x)) x]
     [else (error (string-append "validate-txexpr-element: "
                                 (if txexpr-context (format "in ~v, " txexpr-context) "")
                                 (format "~v is not a valid element (must be txexpr, string, symbol, XML char, or cdata)" x)))]))
@@ -34,35 +33,30 @@
 ;; is it a named x-expression?
 ;; todo: rewrite this recurively so errors can be pinpointed (for debugging)
 (define/typed (validate-txexpr x)
-  (Any -> Txexpr)
-  (define-syntax-rule (validate-txexpr-element-with-context e) (validate-txexpr-element e #:context x))
+  (Any -> (Option Txexpr))
   (define-syntax-rule (validate-txexpr-attrs-with-context e) (validate-txexpr-attrs e #:context x))
-  (if (match x
-        [(list (? symbol?)) #t]
-        ;; todo: fix this condition
-        #;[(list (? symbol?) (and attr-list (list (list k v ...) ...)) rest ...) 
-           (and (validate-txexpr-attrs-with-context (cast attr-list Txexpr-Attrs)) 
-                (andmap (λ(e) (validate-txexpr-element-with-context e)) rest))]
-        [(list (? symbol? name) rest ...)(andmap (λ(e) (validate-txexpr-element-with-context e)) rest)]
-        [else (error 'validate-txexpr (format "~v is not a list starting with a symbol" x))])
-      (cast x Txexpr)
-      (error 'validate-txexpr "Can't reach this")))
+  (define-syntax-rule (validate-txexpr-element-with-context e) (validate-txexpr-element e #:context x))
+  (cond
+    [(txexpr-short? x) x]
+    [(txexpr? x) (and
+                  (validate-txexpr-attrs-with-context (get-attrs x))
+                  (andmap (λ([e : Txexpr-Element]) (validate-txexpr-element-with-context e)) (get-elements x)) x)]
+    [else (error 'validate-txexpr (format "~v is not a list starting with a symbol" x))]))
 
 
 (define/typed (make-txexpr tag [attrs null] [elements null])
   ((Symbol) (Txexpr-Attrs (Listof Txexpr-Element)) . ->* . Txexpr)
-  (cast (cons tag (append (if (empty? attrs) empty (list attrs)) elements)) Txexpr))
+  (define result (cons tag (append (if (empty? attrs) empty (list attrs)) elements)))
+  (if (txexpr? result)
+      result
+      (error 'make-txexpr "This can't happen")))
 
 
 (define/typed (txexpr->values x)
   (Txexpr -> (values Txexpr-Tag Txexpr-Attrs Txexpr-Elements))
-  (match 
-      ; txexpr may or may not have attr
-      ; if not, add null attr so that decomposition only handles one case
-      (match x
-        [(list _ (? txexpr-attrs?) _ ...) x]
-        [else `(,(car x) ,null ,@(cdr x))])
-    [(list tag attr content ...) (values tag (cast attr Txexpr-Attrs) (cast content Txexpr-Elements))]))
+  (if (txexpr-short? x)
+      (values (car x) '() (cdr x))
+      (values (car x) (cadr x) (cddr x))))
 
 
 (define/typed (txexpr->list x)
@@ -113,12 +107,12 @@
                  (for/fold ([items : (Listof (U Can-Be-Txexpr-Attr-Key Can-Be-Txexpr-Attr-Value)) null])
                            ([i (in-list items-in)])
                    (cond
-                     [(txexpr-attr? i) (append i items)]
-                     [(txexpr-attrs? i) (append (append* i) items)]
+                     [(txexpr-attr? i) (append (reverse i) items)]
+                     [(txexpr-attrs? i) (append (append* (map (λ([a : Txexpr-Attr]) (reverse a)) i)) items)]
                      [else (cons i items)]))))
   (define/typed (make-key-value-list items)
     ((Listof (U Can-Be-Txexpr-Attr-Key Can-Be-Txexpr-Attr-Value)) -> (Listof (Pairof Txexpr-Attr-Key Txexpr-Attr-Value)))
-    (if (>= (length items) 2)
+    (if (< (length items) 2)
         null
         (let ([key (->txexpr-attr-key (car items))]
               [value (->txexpr-attr-value (cadr items))]
@@ -175,7 +169,7 @@
 
 ;; convert list of alternating keys & values to attr
 (define/typed (merge-attrs . items)
-  (Txexpr-Attr * -> Txexpr-Attrs)
+  (Can-Be-Txexpr-Attr * -> Txexpr-Attrs)
   (define attrs-hash (apply attrs->hash items))
   ;; sort needed for predictable results for unit tests
   (define sorted-hash-keys (sort (hash-keys attrs-hash) (λ([a : Txexpr-Tag][b : Txexpr-Tag]) (string<? (->string a) (->string b)))))
@@ -189,52 +183,59 @@
         (make-txexpr tag null (map remove-attrs elements)))
       x))
 
-#|
 
-;; todo: exclude-proc will keep things out, but is there a way to keep things in?
-(define+provide+safe (map-elements/exclude proc x exclude-test)
-  (procedure? txexpr? procedure? . -> . txexpr?)
+
+(define/typed (map-elements/exclude proc x exclude-test)
+  ((Xexpr -> Xexpr) Xexpr (Xexpr -> Boolean) -> Xexpr)
   (cond
     [(txexpr? x) 
      (if (exclude-test x)
          x
          (let-values ([(tag attr elements) (txexpr->values x)])
            (make-txexpr tag attr 
-                        (map (λ(x)(map-elements/exclude proc x exclude-test)) elements))))]
+                        (map (λ([x : Xexpr])(map-elements/exclude proc x exclude-test)) elements))))]
     ;; externally the function only accepts txexpr,
     ;; but internally we don't care
     [else (proc x)]))
 
-(define+provide+safe (map-elements proc x)
-  (procedure? txexpr? . -> . txexpr?)
+
+(define/typed (map-elements proc x)
+  ((Xexpr -> Xexpr) Xexpr -> Xexpr)
   (map-elements/exclude proc x (λ(x) #f)))
 
+
 ;; function to split tag out of txexpr
-(define+provide+safe (splitf-txexpr tx pred [proc (λ(x) null)])
-  ((txexpr? procedure?) (procedure?) . ->* . (values txexpr? txexpr-elements?))
-  (define matches null)
-  (define (do-extraction x)
+(define deleted-signal (gensym))
+(define/typed (splitf-txexpr tx pred [proc (λ([x : Xexpr]) deleted-signal)])
+  ((Txexpr (Xexpr -> Boolean)) ((Xexpr -> Xexpr)) . ->* . (values Txexpr Txexpr-Elements))
+  (define matches : Txexpr-Elements null)
+  (define/typed (do-extraction x)
+    (Xexpr -> Xexpr)
     (cond
       [(pred x) (begin  ; store matched item and return processed value
                   (set! matches (cons x matches))
                   (proc x))]
-      [(txexpr? x) (let-values([(tag attr body) (txexpr->values x)]) 
-                     (make-txexpr tag attr (do-extraction body)))]
-      [(txexpr-elements? x) (filter (compose1 not null?) (map do-extraction x))]
+      [(txexpr? x) (let-values([(tag attr elements) (txexpr->values x)]) 
+                     (make-txexpr tag attr (filter (λ([e : Xexpr]) (not (equal? e deleted-signal))) (map do-extraction elements))))]
       [else x]))
   (define tx-extracted (do-extraction tx)) ;; do this first to fill matches
-  (values tx-extracted (reverse matches))) 
+  (values (if (txexpr? tx-extracted)
+              tx-extracted
+              (error 'splitf-txexpr "Can't get here")) (reverse matches)))
 
-(define+provide+safe (xexpr->html x)
-  (xexpr? . -> . string?)
-  (define (->cdata x)
-    (if (cdata? x) x (cdata #f #f x)))
-  
-  (xexpr->string (let loop ([x x])
+
+(define/typed (xexpr->html x)
+  (Xexpr -> String)
+  (define/typed (->cdata x)
+    (Xexpr -> Xexpr)
+    (cond
+      [(cdata? x) x]
+      [(string? x) (cdata #f #f  (format "<![CDATA[~a]]>" x))]
+      [else x]))
+  (xexpr->string (let loop : Xexpr ([x : Xexpr x])
                    (cond
                      [(txexpr? x) (if (member (get-tag x) '(script style))
                                       (make-txexpr (get-tag x) (get-attrs x) (map ->cdata (get-elements x)))
                                       (make-txexpr (get-tag x) (get-attrs x) (map loop (get-elements x))))]
                      [else x]))))
 
-|#
