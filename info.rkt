@@ -1,6 +1,6 @@
 #lang info
-(define collection "txexpr")
-(define scribblings '(("scribblings/txexpr.scrbl" ())))
-(define compile-omit-paths '("tests.rkt"))
-(define deps '("base"))
-(define build-deps '("scribble-lib" "racket-doc"))
+(define collection 'multi)
+(define deps '("base" "sugar" "typed-racket-lib"
+               "typed-racket-more"
+               "rackunit-lib"))
+(define build-deps '("scribble-lib" "racket-doc" "typed-racket-doc"))
