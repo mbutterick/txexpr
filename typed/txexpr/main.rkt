@@ -45,18 +45,14 @@
     [else (error 'validate-txexpr (format "~v is not a list starting with a symbol" x))]))
 
 
-(define/typed make-txexpr
+(define/typed (make-txexpr tag [attrs null] [elements null])
   (case-> (Symbol -> Txexpr)
           (Symbol Txexpr-Attrs -> Txexpr)
           (Symbol Txexpr-Attrs (Listof Txexpr-Element) -> Txexpr))
-  (case-lambda
-    [(tag) (make-txexpr tag null null)]
-    [(tag attrs) (make-txexpr tag attrs null)]
-    [(tag attrs elements)
-     (define result (cons tag (append (if (empty? attrs) empty (list attrs)) elements)))
-     (if (txexpr? result)
-         result
-         (error 'make-txexpr "This can't happen"))]))
+  (define result (cons tag (append (if (empty? attrs) empty (list attrs)) elements)))
+  (if (txexpr? result)
+      result
+      (error 'make-txexpr "This can't happen")))
 
 
 (define/typed (txexpr->values x)
@@ -212,13 +208,10 @@
 
 ;; function to split tag out of txexpr
 (define deleted-signal (gensym))
-(define/typed splitf-txexpr
+(define/typed (splitf-txexpr tx pred [proc (λ:([x : Xexpr]) deleted-signal)])
   (case-> (Txexpr (Xexpr -> Boolean) -> (values Txexpr Txexpr-Elements))
           (Txexpr (Xexpr -> Boolean) (Xexpr -> Xexpr) -> (values Txexpr Txexpr-Elements)))
-  (case-lambda
-    [(tx pred) (splitf-txexpr tx pred (λ:([x : Xexpr]) deleted-signal))]
-    [(tx pred proc)
-     (define: matches : Txexpr-Elements null)
+  (define: matches : Txexpr-Elements null)
      (define/typed (do-extraction x)
        (Xexpr -> Xexpr)
        (cond
@@ -231,7 +224,7 @@
      (define: tx-extracted : Xexpr (do-extraction tx)) ;; do this first to fill matches
      (values (if (txexpr? tx-extracted)
                  tx-extracted
-                 (error 'splitf-txexpr "Can't get here")) (reverse matches))]))
+                 (error 'splitf-txexpr "Can't get here")) (reverse matches)))
 
 
 (define/typed (xexpr->html x)
