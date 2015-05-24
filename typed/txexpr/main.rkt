@@ -2,7 +2,6 @@
 (require (for-syntax typed/racket/base) typed/sugar/define)
 (require racket/match racket/string racket/list racket/bool "core-predicates.rkt")
 (provide (all-defined-out) (all-from-out "core-predicates.rkt"))
-(require typed/sugar/debug)
 
 (define/typed (validate-txexpr-attrs x #:context [txexpr-context #f])
   (Txexpr-Attrs [#:context Any]  -> Txexpr-Attrs)
