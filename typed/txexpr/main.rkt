@@ -240,7 +240,7 @@
     (Xexpr -> Xexpr)
     (cond
       [(cdata? x) x]
-      [(string? x) (cdata #f #f  (format "<![CDATA[~a]]>" x))]
+      [(string? x) (cdata #f #f x)] ; don't use "![CDATA[...]]" wrapper in HTML, it's not consistent with the spec
       [else x]))
   (xexpr->string (let: loop : Xexpr ([x : Xexpr x])
                    (cond

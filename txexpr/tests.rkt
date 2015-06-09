@@ -196,4 +196,4 @@
                (list '(root (div "foo") "hello" "world" (div "foo") (em "goodnight" "moon" (div "foo"))) '((meta "foo" "bar") (meta "foo2" "bar2") (meta "foo3" "bar3"))))
  
  (check-equal? (xexpr->html '(root (script "3 > 2") "Why is 3 > 2?"))
-               "<root><script><![CDATA[3 > 2]]></script>Why is 3 &gt; 2?</root>"))
+               "<root><script>3 > 2</script>Why is 3 &gt; 2?</root>"))
