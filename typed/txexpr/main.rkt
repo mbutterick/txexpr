@@ -51,7 +51,15 @@
   (define result (cons tag (append (if (empty? attrs) empty (list attrs)) elements)))
   (if (txexpr? result)
       result
-      (error 'make-txexpr "This can't happen")))
+      (error 'make-txexpr
+             (cond
+               [(not (txexpr-tag? tag))
+                (format "This is not a txexpr-tag: ~v" tag)]
+               [(not (txexpr-attrs? attrs))
+                (format "This is not a list of txexpr-attrs: ~v" attrs)]
+               [(not (txexpr-elements? elements))
+                (format "This is not a list of txexpr-elements: ~v" elements)]
+               [else ""]))))
 
 
 (define/typed (txexpr->values x)
@@ -107,7 +115,7 @@
   ;; but still need this function to make sure that 'foo and "foo" are treated as the same hash key
   (define items (reverse
                  (for/fold: ([items : (Listof (U Can-Be-Txexpr-Attr-Key Can-Be-Txexpr-Attr-Value)) null])
-                   ([i (in-list items-in)])
+                            ([i (in-list items-in)])
                    (cond
                      [(txexpr-attr? i) (append (reverse i) items)]
                      [(txexpr-attrs? i) (append (append* (map (λ:([a : Txexpr-Attr]) (reverse a)) i)) items)]
@@ -211,19 +219,19 @@
   (case-> (Txexpr (Xexpr -> Boolean) -> (values Txexpr Txexpr-Elements))
           (Txexpr (Xexpr -> Boolean) (Xexpr -> Xexpr) -> (values Txexpr Txexpr-Elements)))
   (define: matches : Txexpr-Elements null)
-     (define/typed (do-extraction x)
-       (Xexpr -> Xexpr)
-       (cond
-         [(pred x) (begin  ; store matched item and return processed value
-                     (set! matches (cons x matches))
-                     (proc x))]
-         [(txexpr? x) (let-values([(tag attr elements) (txexpr->values x)]) 
-                        (make-txexpr tag attr (filter (λ:([e : Xexpr]) (not (equal? e deleted-signal))) (map do-extraction elements))))]
-         [else x]))
-     (define: tx-extracted : Xexpr (do-extraction tx)) ;; do this first to fill matches
-     (values (if (txexpr? tx-extracted)
-                 tx-extracted
-                 (error 'splitf-txexpr "Can't get here")) (reverse matches)))
+  (define/typed (do-extraction x)
+    (Xexpr -> Xexpr)
+    (cond
+      [(pred x) (begin  ; store matched item and return processed value
+                  (set! matches (cons x matches))
+                  (proc x))]
+      [(txexpr? x) (let-values([(tag attr elements) (txexpr->values x)]) 
+                     (make-txexpr tag attr (filter (λ:([e : Xexpr]) (not (equal? e deleted-signal))) (map do-extraction elements))))]
+      [else x]))
+  (define: tx-extracted : Xexpr (do-extraction tx)) ;; do this first to fill matches
+  (values (if (txexpr? tx-extracted)
+              tx-extracted
+              (error 'splitf-txexpr "Can't get here")) (reverse matches)))
 
 
 (define/typed (xexpr->html x)
