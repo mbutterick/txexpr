@@ -231,7 +231,7 @@
   (define: tx-extracted : Xexpr (do-extraction tx)) ;; do this first to fill matches
   (values (if (txexpr? tx-extracted)
               tx-extracted
-              (error 'splitf-txexpr "Can't get here")) (reverse matches)))
+              (error 'splitf-txexpr "Bad input")) (reverse matches)))
 
 
 (define/typed (xexpr->html x)
