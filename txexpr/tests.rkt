@@ -57,8 +57,9 @@
  (check-true (txexpr-element? "string"))
  (check-true (txexpr-element? 'amp))
  (check-true (txexpr-element? '(p "string")))
- (check-true (txexpr-element? 65)) ;; a valid-char
- (check-false (txexpr-element? 0)) ;; not a valid-char
+  (check-true (txexpr-element? 2)) ; a valid-char, but not in v6.0 xml:xexpr? 
+ (check-true (txexpr-element? 65)) ; a valid-char
+ (check-false (txexpr-element? 0)) ; not a valid-char
  
  (check-true (txexpr-elements? '("p" "foo" "123")))
  (check-true (txexpr-elements? '("p" "foo" 123))) ; includes number

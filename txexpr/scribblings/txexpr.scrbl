@@ -3,7 +3,7 @@
 @; for documentation purposes, use the xexpr? from xml.
 @; the one in txexpr is just to patch over an issue with
 @; `valid-char?` in Racket 6.
-@(require scribble/eval (for-label racket (except-in txexpr xexpr?) xml (only-in typed/racket require/typed)))
+@(require scribble/eval (for-label racket txexpr xml (only-in typed/racket require/typed)))
 
 @(define my-eval (make-base-eval))
 @(my-eval `(require txexpr xml))
