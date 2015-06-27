@@ -68,6 +68,8 @@
  (check-false (txexpr-elements? '("foo" "bar" ((key "value"))))) ; malformed
  
  (check-true (txexpr? '(p)))
+ (check-true (txexpr? '(div 2)))
+ (check-true (txexpr? '(div (div ((foo "bar")) 2))))
  (check-true (txexpr? '(p "foo" "bar")))
  (check-true (txexpr? '(p ((key "value")) "foo" "bar")))
  (check-true (txexpr? '(p 123))) ; content is a number

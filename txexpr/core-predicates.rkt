@@ -1,6 +1,21 @@
 #lang racket/base
-(require sugar/define xml racket/match)
-(provide (all-defined-out) valid-char? cdata? cdata xexpr->string xexpr?)
+(require sugar/define (prefix-in xml: xml) racket/match)
+(provide (all-defined-out) cdata? cdata xexpr->string xexpr?)
+
+; Section 2.2 of XML 1.1
+; (XML 1.0 is slightly different and more restrictive)
+(define (valid-char? i)
+  (and (exact-nonnegative-integer? i)
+       (or (<= #x1     i #xD7FF)
+           (<= #xE000  i #xFFFD)
+           (<= #x10000 i #x10FFFF))))
+
+(define (xexpr? x)
+  (or (txexpr? x) (xml:xexpr? x) (valid-char? x)))
+
+(define cdata xml:cdata)
+(define cdata? xml:cdata?)
+(define xexpr->string xml:xexpr->string)
 
 (define (txexpr-short? x)
   (match x
