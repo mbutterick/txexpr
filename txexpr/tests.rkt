@@ -4,26 +4,28 @@
 (define-syntax (eval-as-untyped stx)
   (syntax-case stx ()
     [(_ exprs ...)
-     (with-syntax ([sym (generate-temporary)]) 
-       #'(begin
-           (module sym racket
-             (require rackunit "main.rkt")
-             exprs ...)
-           (require 'sym)
-           (module sym2 racket
-             (require rackunit (submod "main.rkt" safe))
-             exprs ...)
-           (require 'sym2)))]))
+     (with-syntax ([sym (syntax-e (generate-temporary))]
+                   [sym2 (syntax-e (generate-temporary))]) 
+       (datum->syntax stx `(begin
+                             (module ,(syntax->datum #'sym) racket
+                               (require rackunit "main.rkt")
+                               ,@(syntax->datum #'(exprs ...)))
+                             (require ',(syntax->datum #'sym))
+                             (module ,(syntax->datum #'sym2) racket
+                               (require rackunit (submod "main.rkt" safe))
+                               ,@(syntax->datum #'(exprs ...)))
+                             (require ',(syntax->datum #'sym2))) stx))]))
+
 
 (define-syntax (eval-as-typed stx)
   (syntax-case stx ()
     [(_ exprs ...)
-     (with-syntax ([sym (generate-temporary)]) 
-       #'(begin
-           (module sym typed/racket
-             (require typed/rackunit "../typed/txexpr.rkt")
-             exprs ...)
-           (require 'sym)))]))
+     (with-syntax ([sym (syntax-e (generate-temporary))]) 
+       (datum->syntax stx `(begin
+                             (module ,(syntax->datum #'sym) typed/racket
+                               (require typed/rackunit "../typed/txexpr.rkt")
+                               ,@(syntax->datum #'(exprs ...)))
+                             (require ',(syntax->datum #'sym))) stx))]))
 
 (define-syntax-rule (eval-as-typed-and-untyped exprs ...)
   (begin
@@ -32,6 +34,7 @@
 
 
 (eval-as-typed-and-untyped
+ (require racket/set)
  (define-syntax (values->list stx)
    (syntax-case stx ()
      [(_ values-expr) #'(call-with-values (λ () values-expr) list)]))
@@ -57,7 +60,7 @@
  (check-true (txexpr-element? "string"))
  (check-true (txexpr-element? 'amp))
  (check-true (txexpr-element? '(p "string")))
-  (check-true (txexpr-element? 2)) ; a valid-char, but not in v6.0 xml:xexpr? 
+ (check-true (txexpr-element? 2)) ; a valid-char, but not in v6.0 xml:xexpr? 
  (check-true (txexpr-element? 65)) ; a valid-char
  (check-false (txexpr-element? 0)) ; not a valid-char
  
@@ -127,7 +130,8 @@
  (check-equal? (attrs->hash '((foo "bar")) '(foo "fraw")) '#hash((foo . "fraw")))
  (check-equal? (attrs->hash '((foo "bar")) '(foo "fraw") 'foo "dog") '#hash((foo . "dog")))
  
- (check-equal? (hash->attrs '#hash((foo . "bar")(hee . "haw"))) '((foo "bar")(hee "haw")))
+ (check-equal? (apply set (hash->attrs '#hash((foo . "bar")(hee . "haw"))))
+               (apply set '((foo "bar")(hee "haw"))))
  
  (check-equal? (attr-ref '(p ((foo "bar"))) 'foo) "bar")
  (check-equal? (attr-set '(p ((foo "bar"))) 'foo "fraw") '(p ((foo "fraw"))))
