@@ -16,24 +16,7 @@
                                ,@(syntax->datum #'(exprs ...)))
                              (require ',(syntax->datum #'sym2))) stx))]))
 
-
-(define-syntax (eval-as-typed stx)
-  (syntax-case stx ()
-    [(_ exprs ...)
-     (with-syntax ([sym (syntax-e (generate-temporary))]) 
-       (datum->syntax stx `(begin
-                             (module ,(syntax->datum #'sym) typed/racket
-                               (require typed/rackunit "../typed/txexpr.rkt")
-                               ,@(syntax->datum #'(exprs ...)))
-                             (require ',(syntax->datum #'sym))) stx))]))
-
-(define-syntax-rule (eval-as-typed-and-untyped exprs ...)
-  (begin
-    (eval-as-typed exprs ...)
-    (eval-as-untyped exprs ...)))
-
-
-(eval-as-typed-and-untyped
+(eval-as-untyped
  (require racket/set)
  (define-syntax (values->list stx)
    (syntax-case stx ()

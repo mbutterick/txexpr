@@ -15,8 +15,4 @@ In safe mode (with contracts):
 
     (require (submod txexpr safe))
 
-Or in typed mode:
-
-    (require typed/txexpr)
-
 Full docs are installed with the package. You can also [read the docs here](http://pkg-build.racket-lang.org/doc/txexpr).
