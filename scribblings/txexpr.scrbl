@@ -345,7 +345,7 @@ Returns @racket[#t] if @racket[_attrs] and @racket[_other-attrs] contain the sam
 (attr-ref
 [tx txexpr?]
 [key can-be-txexpr-attr-key?])
-txexpr-attr-value?]
+can-be-txexpr-attr-value?]
 Given a @racket[_key], look up the corresponding @racket[_value] in the attributes of a @racket[_txexpr]. Asking for a nonexistent key produces an error.
 
 @examples[#:eval my-eval
@@ -358,7 +358,7 @@ Given a @racket[_key], look up the corresponding @racket[_value] in the attribut
 (attr-ref*
 [tx txexpr?]
 [key can-be-txexpr-attr-key?])
-(listof txexpr-attr-value?)]
+(listof can-be-txexpr-attr-value?)]
 Like @racket[attr-ref], but returns a recursively gathered list of all the @racket[_value]s for that key within @racket[_tx]. Asking for a nonexistent key produces @racket[null].
 
 @examples[#:eval my-eval
@@ -372,9 +372,9 @@ Like @racket[attr-ref], but returns a recursively gathered list of all the @rack
 (attr-set
 [tx txexpr?]
 [key can-be-txexpr-attr-key?]
-[value txexpr-attr-value?])
+[value can-be-txexpr-attr-value?])
 txexpr?]
-Given a @racket[_txexpr], set the value of attribute @racket[_key] to @racket[_value]. The function returns the updated @racket[_txexpr].
+Given a @racket[_txexpr], set the value of attribute @racket[_key] to @racket[_value]. Return the updated @racket[_txexpr].
 
 @examples[#:eval my-eval
 (define tx '(div [[class "red"][id "top"]] "Hello" (p "World")))
@@ -383,6 +383,31 @@ Given a @racket[_txexpr], set the value of attribute @racket[_key] to @racket[_v
 (attr-set (attr-set tx 'id "bottom") 'class "blue")
 ]
 
+@defproc[
+(attr-set*
+[tx txexpr?]
+[key can-be-txexpr-attr-key?]
+[value can-be-txexpr-attr-value?] ... ... )
+txexpr?]
+Like @racket[attr-set], but accepts any number of keys and values.
+
+@examples[#:eval my-eval
+(define tx '(div "Hello"))
+(attr-set* tx 'id "bottom" 'class "blue")
+]
+
+@defproc[
+(attr-join
+[tx txexpr?]
+[key can-be-txexpr-attr-key?]
+[value can-be-txexpr-attr-value?])
+txexpr?]
+Given a @racket[_txexpr], append the value of attribute @racket[_key] with @racket[_value]. Return the updated @racket[_txexpr].
+
+@examples[#:eval my-eval
+(define tx '(div [[class "red"]] "Hello"))
+(attr-join tx 'class "small")
+]
 
 @defproc[
 (merge-attrs

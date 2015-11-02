@@ -118,6 +118,14 @@
  
  (check-equal? (attr-ref '(p ((foo "bar"))) 'foo) "bar")
  (check-equal? (attr-set '(p ((foo "bar"))) 'foo "fraw") '(p ((foo "fraw"))))
+ (check-equal? (attr-set* '(p ((foo "bar"))) 'foo "fraw") '(p ((foo "fraw"))))
+ (check-true (let ([result (attr-set* '(p ((foo "bar"))) 'foo "fraw" 'zim 'zam)])
+               (and (member '(foo "fraw") (get-attrs result))
+                    (member '(zim "zam") (get-attrs result)) #t)))
+ (check-equal? (attr-join '(p ((foo "bar"))) 'foo "zam") '(p ((foo "bar zam"))))
+ (check-true (let ([result (attr-join '(p ((foo "bar"))) 'zim "zam")])
+               (and (member '(foo "bar") (get-attrs result))
+                    (member '(zim "zam") (get-attrs result)) #t)))
  
  (check-true (attrs-have-key? '(p ((color "red")(shape "circle"))) 'color))
  (check-true (attrs-have-key? '(p ((color "red")(shape "circle"))) "color"))

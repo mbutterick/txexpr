@@ -1,5 +1,5 @@
 #lang racket/base
-(require sugar/define racket/string racket/list racket/match xml)
+(require sugar/define sugar/coerce racket/string racket/list racket/match xml)
 (provide cdata? cdata valid-char? xexpr->string xexpr?) ; from xml
 
 ;; Section 2.2 of XML 1.1
@@ -11,14 +11,17 @@
            (<= #xE000  i #xFFFD)
            (<= #x10000 i #x10FFFF))))
 
+
 (define (my-xexpr? x)
   (or (txexpr? x) (xexpr? x) (my-valid-char? x)))
+
 
 (define+provide+safe (txexpr-short? x)
   predicate/c
   (match x
     [(list (? symbol? name) (? my-xexpr?) ...) #t]
     [else #f]))
+
 
 (define+provide+safe (txexpr? x)
   predicate/c
@@ -27,13 +30,16 @@
         [(list (? symbol?) (list (list (? symbol?) (? string?)) ...) (? my-xexpr?) ...) #t]
         [else #f])))
 
+
 (define+provide+safe (txexpr-tag? x)
   predicate/c
   (symbol? x))
 
+
 (define+provide+safe (txexpr-tags? x)
   predicate/c
   (and (list? x) (andmap txexpr-tag? x)))
+
 
 (define+provide+safe (txexpr-attr? x)
   predicate/c
@@ -46,37 +52,46 @@
   predicate/c
  (and (list? x) (andmap txexpr-attr? x)))
 
+
 (define+provide+safe (txexpr-element? x)
   predicate/c
   (my-xexpr? x))
+
 
 (define+provide+safe (txexpr-elements? x)
   predicate/c
  (and (list? x) (andmap txexpr-element? x)))
 
+
 (define+provide+safe (txexpr-attr-key? x)
   predicate/c
   (symbol? x))
+
 
 (define+provide+safe (can-be-txexpr-attr-key? x)
   predicate/c
   (or (symbol? x) (string? x)))
 
+
 (define+provide+safe (txexpr-attr-value? x)
   predicate/c
   (string? x))
+
 
 (define+provide+safe (txexpr-attr-values? x)
   predicate/c
   (and (list? x) (andmap txexpr-attr-value? x)))
 
+
 (define+provide+safe (can-be-txexpr-attr-value? x)
   predicate/c
   (or (symbol? x) (string? x)))
 
+
 (define+provide+safe (can-be-txexpr-attrs? x)
   predicate/c
   (ormap (λ(test) (test x)) (list txexpr-attr? txexpr-attrs? can-be-txexpr-attr-key? can-be-txexpr-attr-value?)))
+
 
 (define+provide+safe (list-of-can-be-txexpr-attrs? xs)
   predicate/c
@@ -179,10 +194,6 @@
   (->string x))
 
 
-(define (->string x)
-  (if (symbol? x) (symbol->string x) x))
-
-
 (define+provide+safe (attrs->hash . items-in)
   (() #:rest (listof can-be-txexpr-attrs?) . ->* . hash?)
   ;; can be liberal with input because they're all just nested key/value pairs
@@ -231,6 +242,20 @@
   (make-txexpr (get-tag tx) new-attrs (get-elements tx)))
 
 
+(define+provide+safe (attr-join tx key value)
+  (txexpr? can-be-txexpr-attr-key? can-be-txexpr-attr-value? . -> . txexpr?)
+  (define starting-values (string-split (if (attrs-have-key? tx key)
+                             (attr-ref tx key)
+                             "")))
+  (attr-set tx key (string-join `(,@starting-values ,value) " ")))      
+
+
+(define+provide+safe (attr-set* tx . kvs)
+  ((txexpr?) #:rest (listof (or/c can-be-txexpr-attr-key? can-be-txexpr-attr-value?)) . ->* . txexpr?)
+  (define attrs-to-set (apply hash kvs))
+  (foldl (λ(kv-pair acc-tx) (attr-set acc-tx (car kv-pair) (cdr kv-pair))) tx (hash->list attrs-to-set)))
+
+
 (define+provide+safe (attr-ref tx key)
   (txexpr? can-be-txexpr-attr-key? . -> . txexpr-attr-value?)
   (with-handlers ([exn:fail? (λ(e) (error (format "attr-ref: no value found for key ~v" key)))])
@@ -263,7 +288,6 @@
       (let-values ([(tag attr elements) (txexpr->values x)])
         (make-txexpr tag null (map remove-attrs elements)))
       x))
-
 
 
 (define+provide+safe (map-elements/exclude proc x exclude-test)
