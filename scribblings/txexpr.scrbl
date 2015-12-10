@@ -3,10 +3,10 @@
 @; for documentation purposes, use the xexpr? from xml.
 @; the one in txexpr is just to patch over an issue with
 @; `valid-char?` in Racket 6.
-@(require scribble/eval (for-label racket txexpr xml))
+@(require scribble/eval (for-label racket txexpr xml rackunit))
 
 @(define my-eval (make-base-eval))
-@(my-eval `(require txexpr xml))
+@(my-eval `(require txexpr xml rackunit))
 
 
 @title{txexpr: Tagged X-expressions}
@@ -515,6 +515,33 @@ Ordinarily, the result of the split operation is to remove the elements that mat
 (splitf-txexpr tx is-meta? replace-meta)
 ]
 
+
+@defproc[
+(check-txexprs-equal?
+[tx1 txexpr?]
+[tx2 txexpr?])
+void?]
+Designed to be used with @racketmodname[rackunit]. Check whether @racket[_tx1] and @racket[_tx2] are @racket[equal?] except for ordering of attributes (which ordinarily has no semantic significance). Return @racket[void] if so, otherwise raise a check failure.
+
+@examples[#:eval my-eval
+(define tx1 '(div ((attr-a "foo")(attr-z "bar"))))
+(define tx2 '(div ((attr-z "bar")(attr-a "foo"))))
+(parameterize ([current-check-handler (λ _ (display "not "))])
+  (display "txexprs are ")
+  (check-txexprs-equal? tx1 tx2)
+  (displayln "equal"))
+]
+
+If ordering of attributes is relevant to your test, then just use @racket[check-equal?] as usual.
+
+@examples[#:eval my-eval
+(define tx1 '(div ((attr-a "foo")(attr-z "bar"))))
+(define tx2 '(div ((attr-z "bar")(attr-a "foo"))))
+(parameterize ([current-check-handler (λ _ (display "not "))])
+  (display "txexprs are ")
+  (check-equal? tx1 tx2)
+  (displayln "equal"))
+]
 
 
 @section{License & source code}

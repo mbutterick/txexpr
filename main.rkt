@@ -50,7 +50,7 @@
 
 (define+provide+safe (txexpr-attrs? x)
   predicate/c
- (and (list? x) (andmap txexpr-attr? x)))
+  (and (list? x) (andmap txexpr-attr? x)))
 
 
 (define+provide+safe (txexpr-element? x)
@@ -60,7 +60,7 @@
 
 (define+provide+safe (txexpr-elements? x)
   predicate/c
- (and (list? x) (andmap txexpr-element? x)))
+  (and (list? x) (andmap txexpr-element? x)))
 
 
 (define+provide+safe (txexpr-attr-key? x)
@@ -245,8 +245,8 @@
 (define+provide+safe (attr-join tx key value)
   (txexpr? can-be-txexpr-attr-key? can-be-txexpr-attr-value? . -> . txexpr?)
   (define starting-values (string-split (if (attrs-have-key? tx key)
-                             (attr-ref tx key)
-                             "")))
+                                            (attr-ref tx key)
+                                            "")))
   (attr-set tx key (string-join `(,@starting-values ,value) " ")))      
 
 
@@ -341,3 +341,18 @@
                                       (make-txexpr (get-tag x) (get-attrs x) (map ->cdata (get-elements x)))
                                       (make-txexpr (get-tag x) (get-attrs x) (map loop (get-elements x))))]
                      [else x]))))
+
+(require rackunit)
+(provide+safe check-txexprs-equal?)
+(define-simple-check (check-txexprs-equal? tx1 tx2)
+  ;; txexprs are deemed equal if they differ only in the ordering of attributes.
+  ;; therefore, to check them, 1) sort their attributes, 2) straight list comparison.
+  (define symbol<? (λ syms (apply string<? (map symbol->string syms))))
+  (define (sort-attrs x)
+    (if (txexpr? x)
+        (let-values ([(tag attr elements) (txexpr->values x)])
+          (make-txexpr tag (sort attr #:key car symbol<?) (map sort-attrs elements)))
+        x))
+  (equal? (sort-attrs tx1) (sort-attrs tx2)))
+
+(check-txexprs-equal? '(p ((b "foo")(a "bar")) (span ((d "foo")(c "bar")))) '(p ((a "bar")(b "foo")) (span ((c "bar")(d "foo")))))
