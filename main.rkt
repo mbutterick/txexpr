@@ -347,12 +347,13 @@
 (define-simple-check (check-txexprs-equal? tx1 tx2)
   ;; txexprs are deemed equal if they differ only in the ordering of attributes.
   ;; therefore, to check them, 1) sort their attributes, 2) straight list comparison.
-  (define symbol<? (λ syms (apply string<? (map symbol->string syms))))
-  (define (sort-attrs x)
-    (if (txexpr? x)
-        (let-values ([(tag attr elements) (txexpr->values x)])
-          (make-txexpr tag (sort attr #:key car symbol<?) (map sort-attrs elements)))
-        x))
-  (equal? (sort-attrs tx1) (sort-attrs tx2)))
+  ;; use letrec because `define-simple-check` wants an expression in <=6.2
+  (letrec ([symbol<? (λ syms (apply string<? (map symbol->string syms)))]
+           [sort-attrs (λ(x)
+                         (if (txexpr? x)
+                             (let-values ([(tag attr elements) (txexpr->values x)])
+                               (make-txexpr tag (sort attr #:key car symbol<?) (map sort-attrs elements)))
+                             x))])
+    (equal? (sort-attrs tx1) (sort-attrs tx2))))
 
 (check-txexprs-equal? '(p ((b "foo")(a "bar")) (span ((d "foo")(c "bar")))) '(p ((a "bar")(b "foo")) (span ((c "bar")(d "foo")))))
