@@ -90,7 +90,10 @@
 
 (define+provide+safe (can-be-txexpr-attrs? x)
   predicate/c
-  (ormap (λ(test) (test x)) (list txexpr-attr? txexpr-attrs? can-be-txexpr-attr-key? can-be-txexpr-attr-value?)))
+  (ormap (λ(test) (test x)) (list txexpr-attr?
+                                  txexpr-attrs?
+                                  can-be-txexpr-attr-key?
+                                  can-be-txexpr-attr-value?)))
 
 
 (define+provide+safe (list-of-can-be-txexpr-attrs? xs)
@@ -103,14 +106,16 @@
     (if (not (list? x)) 
         (format "because ~v is not a list" x)
         (let ([bad-attrs (filter (λ(i) (not (txexpr-attr? i))) x)])
-          (format "because ~a ~a" (string-join (map (λ(ba) (format "~v" ba)) bad-attrs) " and ") (if (> (length bad-attrs) 1)
-                                                                                                     "are not valid attributes"
-                                                                                                     "is not in the form '(symbol \"string\")")))))
+          (format "because ~a ~a" (string-join (map (λ(ba) (format "~v" ba)) bad-attrs) " and ")
+                  (if (> (length bad-attrs) 1)
+                      "are not valid attributes"
+                      "is not in the form '(symbol \"string\")")))))
   (cond
     [(and (list? x) (> (length x) 0) (andmap txexpr-attr? x)) x]
     [else (error (string-append "validate-txexpr-attrs: "
                                 (if txexpr-context (format "in ~v, " txexpr-context) "")
-                                (format "~v is not a valid list of attributes ~a" x (make-reason))))]))
+                                (format "~v is not a valid list of attributes ~a" x
+                                        (make-reason))))]))
 
 
 (define (validate-txexpr-element x #:context [txexpr-context #f])
@@ -126,8 +131,10 @@
 ;; todo: rewrite this recurively so errors can be pinpointed (for debugging)
 (define+provide+safe (validate-txexpr x)
   (any/c . -> . txexpr?)
-  (define-syntax-rule (validate-txexpr-attrs-with-context e) (validate-txexpr-attrs e #:context x))
-  (define-syntax-rule (validate-txexpr-element-with-context e) (validate-txexpr-element e #:context x))
+  (define-syntax-rule (validate-txexpr-attrs-with-context e)
+    (validate-txexpr-attrs e #:context x))
+  (define-syntax-rule (validate-txexpr-element-with-context e)
+    (validate-txexpr-element e #:context x))
   (cond
     [(txexpr-short? x) x]
     [(txexpr? x) (and
@@ -238,7 +245,9 @@
 (define+provide+safe (attr-set tx key value)
   (txexpr? can-be-txexpr-attr-key? can-be-txexpr-attr-value? . -> . txexpr?)
   (define new-attrs 
-    (hash->attrs (hash-set (attrs->hash (get-attrs tx)) (->txexpr-attr-key key) (->txexpr-attr-value value))))
+    (hash->attrs (hash-set (attrs->hash (get-attrs tx))
+                           (->txexpr-attr-key key)
+                           (->txexpr-attr-value value))))
   (make-txexpr (get-tag tx) new-attrs (get-elements tx)))
 
 
@@ -278,7 +287,8 @@
   (() #:rest list-of-can-be-txexpr-attrs? . ->* . txexpr-attrs?)
   (define attrs-hash (apply attrs->hash items))
   ;; sort needed for predictable results for unit tests
-  (define sorted-hash-keys (sort (hash-keys attrs-hash) (λ(a b) (string<? (->string a) (->string b)))))
+  (define sorted-hash-keys (sort (hash-keys attrs-hash)
+                                 (λ(a b) (string<? (->string a) (->string b)))))
   `(,@(map (λ(key) (list key (hash-ref attrs-hash key))) sorted-hash-keys)))
 
 
@@ -320,7 +330,8 @@
                   (set! matches (cons x matches))
                   (proc x))]
       [(txexpr? x) (let-values([(tag attr elements) (txexpr->values x)]) 
-                     (make-txexpr tag attr (filter (λ(e) (not (equal? e deleted-signal))) (map do-extraction elements))))]
+                     (make-txexpr tag attr (filter (λ(e) (not (equal? e deleted-signal)))
+                                                   (map do-extraction elements))))]
       [else x]))
   (define tx-extracted (do-extraction tx)) ;; do this first to fill matches
   (values (if (txexpr? tx-extracted)
@@ -333,13 +344,16 @@
   (define (->cdata x)
     (cond
       [(cdata? x) x]
-      [(string? x) (cdata #f #f x)] ; don't use "![CDATA[...]]" wrapper in HTML, it's not consistent with the spec
+      ; don't use "![CDATA[...]]" wrapper in HTML, it's not consistent with the spec
+      [(string? x) (cdata #f #f x)] 
       [else x]))
   (xexpr->string (let loop ([x x])
                    (cond
                      [(txexpr? x) (if (member (get-tag x) '(script style))
-                                      (make-txexpr (get-tag x) (get-attrs x) (map ->cdata (get-elements x)))
-                                      (make-txexpr (get-tag x) (get-attrs x) (map loop (get-elements x))))]
+                                      (make-txexpr (get-tag x) (get-attrs x)
+                                                   (map ->cdata (get-elements x)))
+                                      (make-txexpr (get-tag x) (get-attrs x)
+                                                   (map loop (get-elements x))))]
                      [else x]))))
 
 (require rackunit)
@@ -348,9 +362,11 @@
   ;; txexprs are deemed equal if they differ only in the ordering of attributes.
   ;; therefore, to check them, 1) sort their attributes, 2) straight list comparison.
   ;; use letrec because `define-simple-check` wants an expression in <=6.2
-
+  
   ;; `stringify-attr` is needed because comparing attr keys won't work if there are two attrs with same key.
   ;; so the whole attr is converted into a single string for sorting, which lets the attr value act as a tiebreaker.
+  ;; it doesn't matter that this sort may not be correct (in the sense of a desirable ordering)
+  ;; it just needs to be stable (e.g., a certain set of attrs will always sort the same way)
   (letrec ([stringify-attr (λ(attr) (string-append (symbol->string (car attr)) (cadr attr)))]
            [sort-attrs (λ(x)
                          (if (txexpr? x)
@@ -359,6 +375,8 @@
                              x))])
     (equal? (sort-attrs tx1) (sort-attrs tx2))))
 
-(check-txexprs-equal? '(p ((b "foo")(a "bar")) (span ((d "foo")(c "bar")))) '(p ((a "bar")(b "foo")) (span ((c "bar")(d "foo")))))
+(check-txexprs-equal? '(p ((b "foo")(a "bar")) (span ((d "foo")(c "bar"))))
+                      '(p ((a "bar")(b "foo")) (span ((c "bar")(d "foo")))))
 ;; two attrs with same key
-(check-txexprs-equal? '(p ((a "foo")(a "bar"))) '(p ((a "bar")(a "foo"))))
+(check-txexprs-equal? '(p ((a "foo")(a "bar")))
+                      '(p ((a "bar")(a "foo"))))
