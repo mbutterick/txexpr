@@ -348,12 +348,17 @@
   ;; txexprs are deemed equal if they differ only in the ordering of attributes.
   ;; therefore, to check them, 1) sort their attributes, 2) straight list comparison.
   ;; use letrec because `define-simple-check` wants an expression in <=6.2
-  (letrec ([symbol<? (λ syms (apply string<? (map symbol->string syms)))]
+
+  ;; `stringify-attr` is needed because comparing attr keys won't work if there are two attrs with same key.
+  ;; so the whole attr is converted into a single string for sorting, which lets the attr value act as a tiebreaker.
+  (letrec ([stringify-attr (λ(attr) (string-append (symbol->string (car attr)) (cadr attr)))]
            [sort-attrs (λ(x)
                          (if (txexpr? x)
                              (let-values ([(tag attr elements) (txexpr->values x)])
-                               (make-txexpr tag (sort attr #:key car symbol<?) (map sort-attrs elements)))
+                               (make-txexpr tag (sort attr #:key stringify-attr #:cache-keys? #t string<?) (map sort-attrs elements)))
                              x))])
     (equal? (sort-attrs tx1) (sort-attrs tx2))))
 
 (check-txexprs-equal? '(p ((b "foo")(a "bar")) (span ((d "foo")(c "bar")))) '(p ((a "bar")(b "foo")) (span ((c "bar")(d "foo")))))
+;; two attrs with same key
+(check-txexprs-equal? '(p ((a "foo")(a "bar"))) '(p ((a "bar")(a "foo"))))
