@@ -17,7 +17,6 @@
                              (require ',(syntax->datum #'sym2))) stx))]))
 
 (eval-as-untyped
- (require racket/set)
  (define-syntax (values->list stx)
    (syntax-case stx ()
      [(_ values-expr) #'(call-with-values (λ () values-expr) list)]))
@@ -68,15 +67,15 @@
  (check-not-exn (λ _ (validate-txexpr '(p "foo" "bar"))))
  (check-not-exn (λ _ (validate-txexpr '(p ((key "value")) "foo" "bar"))))
  (check-not-exn (λ _ (validate-txexpr '(p 123)))) ; content is a valid-char
- ;(check-exn (λ _ (validate-txexpr "foo"))) ; not a list with symbol
- ;(check-exn (λ _ (validate-txexpr '(p "foo" "bar" ((key "value")))))) ; malformed
- ;(check-exn (λ _ (validate-txexpr '("p" "foo" "bar")))) ; no name
+ (check-exn exn:fail? (λ _ (validate-txexpr "foo"))) ; not a list with symbol
+ (check-exn exn:fail? (λ _ (validate-txexpr '(p "foo" "bar" ((key "value")))))) ; malformed
+ (check-exn exn:fail? (λ _ (validate-txexpr '("p" "foo" "bar")))) ; no name
  
  
- (check-equal? (make-txexpr 'p) '(p))
- (check-equal? (make-txexpr 'p '((key "value"))) '(p ((key "value"))))
- (check-equal? (make-txexpr 'p null '("foo" "bar")) '(p "foo" "bar"))
- (check-equal? (make-txexpr 'p '((key "value")) (list "foo" "bar")) 
+ (check-txexprs-equal? (make-txexpr 'p) '(p))
+ (check-txexprs-equal? (make-txexpr 'p '((key "value"))) '(p ((key "value"))))
+ (check-txexprs-equal? (make-txexpr 'p null '("foo" "bar")) '(p "foo" "bar"))
+ (check-txexprs-equal? (make-txexpr 'p '((key "value")) (list "foo" "bar")) 
                '(p ((key "value")) "foo" "bar"))
  
  (check-equal? (values->list (txexpr->values '(p))) 
@@ -117,12 +116,12 @@
                (apply set '((foo "bar")(hee "haw"))))
  
  (check-equal? (attr-ref '(p ((foo "bar"))) 'foo) "bar")
- (check-equal? (attr-set '(p ((foo "bar"))) 'foo "fraw") '(p ((foo "fraw"))))
- (check-equal? (attr-set* '(p ((foo "bar"))) 'foo "fraw") '(p ((foo "fraw"))))
+ (check-txexprs-equal? (attr-set '(p ((foo "bar"))) 'foo "fraw") '(p ((foo "fraw"))))
+ (check-txexprs-equal? (attr-set* '(p ((foo "bar"))) 'foo "fraw") '(p ((foo "fraw"))))
  (check-true (let ([result (attr-set* '(p ((foo "bar"))) 'foo "fraw" 'zim 'zam)])
                (and (member '(foo "fraw") (get-attrs result))
                     (member '(zim "zam") (get-attrs result)) #t)))
- (check-equal? (attr-join '(p ((foo "bar"))) 'foo "zam") '(p ((foo "bar zam"))))
+ (check-txexprs-equal? (attr-join '(p ((foo "bar"))) 'foo "zam") '(p ((foo "bar zam"))))
  (check-true (let ([result (attr-join '(p ((foo "bar"))) 'zim "zam")])
                (and (member '(foo "bar") (get-attrs result))
                     (member '(zim "zam") (get-attrs result)) #t)))
@@ -167,11 +166,11 @@
  (check-equal? (merge-attrs '((foo "bar")(goo "gar")) "foo" "haw") '((foo "haw")(goo "gar")))
  
  
- (check-equal? (remove-attrs '(p ((foo "bar")) "hi")) '(p "hi"))
- (check-equal? (remove-attrs '(p ((foo "bar")) "hi" (p ((foo "bar")) "hi"))) '(p "hi" (p "hi")))
+ (check-txexprs-equal? (remove-attrs '(p ((foo "bar")) "hi")) '(p "hi"))
+ (check-txexprs-equal? (remove-attrs '(p ((foo "bar")) "hi" (p ((foo "bar")) "hi"))) '(p "hi" (p "hi")))
  
  
- (check-equal? (map-elements (λ(x) (if (string? x) "boing" x))  
+ (check-txexprs-equal? (map-elements (λ(x) (if (string? x) "boing" x))  
                              '(p "foo" "bar" (em "square"))) 
                '(p "boing" "boing" (em "boing")))
  
@@ -186,11 +185,11 @@
  (define split-this-tx '(root (meta "foo" "bar") "hello" "world" (meta "foo2" "bar2") 
                               (em "goodnight" "moon" (meta "foo3" "bar3"))))
  (define split-predicate (λ(x) (and (txexpr? x) (equal? 'meta (car x)))))
- (check-equal? (call-with-values (λ() (splitf-txexpr split-this-tx split-predicate)) list) 
+ (check-txexprs-equal? (call-with-values (λ() (splitf-txexpr split-this-tx split-predicate)) list) 
                (list '(root "hello" "world" (em "goodnight" "moon")) '((meta "foo" "bar") (meta "foo2" "bar2") (meta "foo3" "bar3"))))
  
  (define split-proc (λ(x) '(div "foo")))
- (check-equal? (call-with-values (λ() (splitf-txexpr split-this-tx split-predicate split-proc)) list) 
+ (check-txexprs-equal? (call-with-values (λ() (splitf-txexpr split-this-tx split-predicate split-proc)) list) 
                (list '(root (div "foo") "hello" "world" (div "foo") (em "goodnight" "moon" (div "foo"))) '((meta "foo" "bar") (meta "foo2" "bar2") (meta "foo3" "bar3"))))
  
  (check-equal? (xexpr->html '(root (script "3 > 2") "Why is 3 > 2?"))
