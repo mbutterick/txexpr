@@ -271,7 +271,7 @@ Accessor functions for the individual pieces of a @racket[_txexpr].
 ]
 
 @defproc[
-(make-txexpr
+(txexpr
 [tag txexpr-tag?] 
 [attrs txexpr-attrs? @empty]
 [elements txexpr-elements? @empty])
@@ -279,14 +279,23 @@ txexpr?]
 Assemble a @racket[_txexpr] from its parts. If you don't have attributes, but you do have elements, you'll need to pass @racket[empty] as the second argument. Note that unlike @racket[xml->xexpr], if the attribute list is empty, it's not included in the resulting expression.
 
 @examples[#:eval my-eval
-(make-txexpr 'div)
-(make-txexpr 'div '() '("Hello" (p "World")))
-(make-txexpr 'div '[[id "top"]])
-(make-txexpr 'div '[[id "top"]] '("Hello" (p "World")))
+(txexpr 'div)
+(txexpr 'div '() '("Hello" (p "World")))
+(txexpr 'div '[[id "top"]])
+(txexpr 'div '[[id "top"]] '("Hello" (p "World")))
 (define tx '(div [[id "top"]] "Hello" (p "World")))
-(make-txexpr (get-tag tx) 
+(txexpr (get-tag tx) 
 (get-attrs tx) (get-elements tx))
 ]
+
+@defproc[
+(make-txexpr
+[tag txexpr-tag?] 
+[attrs txexpr-attrs? @empty]
+[elements txexpr-elements? @empty])
+txexpr?]
+Alternate name for @racket[txexpr].
+
 
 @defproc[
 (can-be-txexpr-attrs?

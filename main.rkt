@@ -143,12 +143,12 @@
     [else (error 'validate-txexpr (format "~v is not a list starting with a symbol" x))]))
 
 
-(define+provide+safe (make-txexpr tag [attrs null] [elements null])
+(define+provide+safe (txexpr tag [attrs null] [elements null])
   ((symbol?) (txexpr-attrs? txexpr-elements?) . ->* . txexpr?)
   (define result (cons tag (append (if (empty? attrs) empty (list attrs)) elements)))
   (if (txexpr? result)
       result
-      (error 'make-txexpr
+      (error 'txexpr
              (cond
                [(not (txexpr-tag? tag))
                 (format "This is not a txexpr-tag: ~v" tag)]
@@ -158,6 +158,8 @@
                 (format "This is not a list of txexpr-elements: ~v" elements)]
                [else ""]))))
 
+(define make-txexpr txexpr)
+(provide+safe make-txexpr)
 
 (define+provide+safe (txexpr->values x)
   (txexpr? . -> . (values symbol? txexpr-attrs? txexpr-elements?))
