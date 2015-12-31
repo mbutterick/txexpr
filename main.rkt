@@ -140,7 +140,12 @@
     [(txexpr? x) (and
                   (validate-txexpr-attrs-with-context (get-attrs x))
                   (andmap (λ(e) (validate-txexpr-element-with-context e)) (get-elements x)) x)]
-    [else (error 'validate-txexpr (format "~v is not a list starting with a symbol" x))]))
+    [(and (list? x) (symbol? (car x)))
+     (and
+      (validate-txexpr-attrs-with-context (get-attrs x))
+      (andmap (λ(e) (validate-txexpr-element-with-context e)) (get-elements x)) x)]
+    [(list? x) (error 'validate-txexpr (format "~v is a list but it doesn't start with a symbol" x))]
+    [else (error 'validate-txexpr (format "~v: not an X-expression" x))]))
 
 
 (define+provide+safe (txexpr tag [attrs null] [elements null])
