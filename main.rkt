@@ -141,9 +141,7 @@
                   (validate-txexpr-attrs-with-context (get-attrs x))
                   (andmap (λ(e) (validate-txexpr-element-with-context e)) (get-elements x)) x)]
     [(and (list? x) (symbol? (car x)))
-     (and
-      (validate-txexpr-attrs-with-context (get-attrs x))
-      (andmap (λ(e) (validate-txexpr-element-with-context e)) (get-elements x)) x)]
+     (andmap (λ(e) (validate-txexpr-element-with-context e)) (get-elements x))]
     [(list? x) (error 'validate-txexpr (format "~v is a list but it doesn't start with a symbol" x))]
     [else (error 'validate-txexpr (format "~v: not an X-expression" x))]))
 
