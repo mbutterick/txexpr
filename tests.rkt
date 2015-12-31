@@ -70,6 +70,7 @@
  (check-exn exn:fail? (λ _ (validate-txexpr "foo"))) ; not a list with symbol
  (check-exn exn:fail? (λ _ (validate-txexpr '(p "foo" "bar" ((key "value")))))) ; malformed
  (check-exn exn:fail? (λ _ (validate-txexpr '("p" "foo" "bar")))) ; no name
+ (check-exn exn:fail? (λ _ (validate-txexpr '(root ((id "top")(class 42)))))) ; malformed attrs
  
  
  (check-txexprs-equal? (make-txexpr 'p) '(p))
