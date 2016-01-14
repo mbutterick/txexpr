@@ -229,7 +229,7 @@
 
 
 (define+provide+safe (hash->attrs attr-hash)
-  (hash-eq? . -> . txexpr-attrs?)
+  (hash? . -> . txexpr-attrs?)
   (map (λ(k) (list k (hash-ref attr-hash k))) (hash-keys attr-hash)))
 
 

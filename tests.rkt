@@ -124,7 +124,7 @@
  (check-equal? (attrs->hash '((foo "bar")) '(foo "fraw")) '#hasheq((foo . "fraw")))
  (check-equal? (attrs->hash '((foo "bar")) '(foo "fraw") 'foo "dog") '#hasheq((foo . "dog")))
  
- (check-equal? (apply set (hash->attrs '#hasheq((foo . "bar")(hee . "haw"))))
+ (check-equal? (apply set (hash->attrs '#hash((foo . "bar")(hee . "haw"))))
                (apply set '((foo "bar")(hee "haw"))))
  
  (check-equal? (attr-ref '(p ((foo "bar"))) 'foo) "bar")
