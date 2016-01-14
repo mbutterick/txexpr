@@ -209,7 +209,7 @@
 
 
 (define+provide+safe (attrs->hash . items-in)
-  (() #:rest (listof can-be-txexpr-attrs?) . ->* . hash?)
+  (() #:rest (listof can-be-txexpr-attrs?) . ->* . hash-eq?)
   ;; can be liberal with input because they're all just nested key/value pairs
   ;; but still need this function to make sure that 'foo and "foo" are treated as the same hash key
   (define items (reverse
@@ -225,11 +225,11 @@
               [value (->txexpr-attr-value (cadr items))]
               [rest (cddr items)])
           (cons (cons key value) (make-key-value-list rest)))))
-  (make-immutable-hash (make-key-value-list items)))
+  (make-immutable-hasheq (make-key-value-list items)))
 
 
 (define+provide+safe (hash->attrs attr-hash)
-  (hash? . -> . txexpr-attrs?)
+  (hash-eq? . -> . txexpr-attrs?)
   (map (λ(k) (list k (hash-ref attr-hash k))) (hash-keys attr-hash)))
 
 

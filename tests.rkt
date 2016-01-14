@@ -1,7 +1,8 @@
 #lang racket/base
 (require (for-syntax racket/base racket/syntax))
 
-(define-syntax (eval-as-untyped stx)
+;; use a separate test file to avoid cycle in loading
+(define-syntax (test-safe-and-unsafe stx)
   (syntax-case stx ()
     [(_ exprs ...)
      (with-syntax ([sym (syntax-e (generate-temporary))]
@@ -9,17 +10,21 @@
        (datum->syntax stx `(begin
                              (module ,(syntax->datum #'sym) racket
                                (require rackunit "main.rkt")
+                               (define-syntax (values->list stx)
+                                 (syntax-case stx ()
+                                   [(_ values-expr) #'(call-with-values (λ () values-expr) list)]))
                                ,@(syntax->datum #'(exprs ...)))
                              (require ',(syntax->datum #'sym))
                              (module ,(syntax->datum #'sym2) racket
                                (require rackunit (submod "main.rkt" safe))
+                               (define-syntax (values->list stx)
+                                 (syntax-case stx ()
+                                   [(_ values-expr) #'(call-with-values (λ () values-expr) list)]))
                                ,@(syntax->datum #'(exprs ...)))
                              (require ',(syntax->datum #'sym2))) stx))]))
 
-(eval-as-untyped
- (define-syntax (values->list stx)
-   (syntax-case stx ()
-     [(_ values-expr) #'(call-with-values (λ () values-expr) list)]))
+(test-safe-and-unsafe
+ 
  (check-true (txexpr-tag? 'foo))
  (check-false (txexpr-tag? "foo"))
  (check-false (txexpr-tag? 3))
@@ -77,13 +82,13 @@
  (check-txexprs-equal? (make-txexpr 'p '((key "value"))) '(p ((key "value"))))
  (check-txexprs-equal? (make-txexpr 'p null '("foo" "bar")) '(p "foo" "bar"))
  (check-txexprs-equal? (make-txexpr 'p '((key "value")) (list "foo" "bar")) 
-               '(p ((key "value")) "foo" "bar"))
-
+                       '(p ((key "value")) "foo" "bar"))
+ 
  (check-txexprs-equal? (txexpr 'p) '(p))
  (check-txexprs-equal? (txexpr 'p '((key "value"))) '(p ((key "value"))))
  (check-txexprs-equal? (txexpr 'p null '("foo" "bar")) '(p "foo" "bar"))
  (check-txexprs-equal? (txexpr 'p '((key "value")) (list "foo" "bar")) 
-               '(p ((key "value")) "foo" "bar"))
+                       '(p ((key "value")) "foo" "bar"))
  
  (check-equal? (values->list (txexpr->values '(p))) 
                (values->list (values 'p null null)))
@@ -115,11 +120,11 @@
  (check-equal? (->txexpr-attr-value "foo") "foo")
  (check-equal? (->txexpr-attr-value 'foo) "foo")
  
- (check-equal? (attrs->hash '((foo "bar"))) '#hash((foo . "bar")))
- (check-equal? (attrs->hash '((foo "bar")) '(foo "fraw")) '#hash((foo . "fraw")))
- (check-equal? (attrs->hash '((foo "bar")) '(foo "fraw") 'foo "dog") '#hash((foo . "dog")))
+ (check-equal? (attrs->hash '((foo "bar"))) '#hasheq((foo . "bar")))
+ (check-equal? (attrs->hash '((foo "bar")) '(foo "fraw")) '#hasheq((foo . "fraw")))
+ (check-equal? (attrs->hash '((foo "bar")) '(foo "fraw") 'foo "dog") '#hasheq((foo . "dog")))
  
- (check-equal? (apply set (hash->attrs '#hash((foo . "bar")(hee . "haw"))))
+ (check-equal? (apply set (hash->attrs '#hasheq((foo . "bar")(hee . "haw"))))
                (apply set '((foo "bar")(hee "haw"))))
  
  (check-equal? (attr-ref '(p ((foo "bar"))) 'foo) "bar")
@@ -178,8 +183,8 @@
  
  
  (check-txexprs-equal? (map-elements (λ(x) (if (string? x) "boing" x))  
-                             '(p "foo" "bar" (em "square"))) 
-               '(p "boing" "boing" (em "boing")))
+                                     '(p "foo" "bar" (em "square"))) 
+                       '(p "boing" "boing" (em "boing")))
  
  
  (check-equal? (attr-ref* '(root ((foo "bar")) "hello" "world" (meta ((foo "zam")) "bar2") 
@@ -193,11 +198,11 @@
                               (em "goodnight" "moon" (meta "foo3" "bar3"))))
  (define split-predicate (λ(x) (and (txexpr? x) (equal? 'meta (car x)))))
  (check-txexprs-equal? (call-with-values (λ() (splitf-txexpr split-this-tx split-predicate)) list) 
-               (list '(root "hello" "world" (em "goodnight" "moon")) '((meta "foo" "bar") (meta "foo2" "bar2") (meta "foo3" "bar3"))))
+                       (list '(root "hello" "world" (em "goodnight" "moon")) '((meta "foo" "bar") (meta "foo2" "bar2") (meta "foo3" "bar3"))))
  
  (define split-proc (λ(x) '(div "foo")))
  (check-txexprs-equal? (call-with-values (λ() (splitf-txexpr split-this-tx split-predicate split-proc)) list) 
-               (list '(root (div "foo") "hello" "world" (div "foo") (em "goodnight" "moon" (div "foo"))) '((meta "foo" "bar") (meta "foo2" "bar2") (meta "foo3" "bar3"))))
+                       (list '(root (div "foo") "hello" "world" (div "foo") (em "goodnight" "moon" (div "foo"))) '((meta "foo" "bar") (meta "foo2" "bar2") (meta "foo3" "bar3"))))
  
  (check-equal? (xexpr->html '(root (script "3 > 2") "Why is 3 > 2?"))
                "<root><script>3 > 2</script>Why is 3 &gt; 2?</root>"))

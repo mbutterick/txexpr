@@ -306,11 +306,11 @@ Predicate for functions that handle @racket[_txexpr-attrs]. Covers values that a
 @deftogether[(
 @defproc[
 (attrs->hash [x can-be-txexpr-attrs?] ...)
-hash?]
+hash-eq?]
 
 @defproc[
 (hash->attrs
-[h hash?])
+[h hash-eq?])
 txexpr-attrs?]
 
 )]
@@ -319,7 +319,7 @@ Convert @racket[_attrs] to an immutable hash, and back again.
 @examples[#:eval my-eval
 (define tx '(div [[id "top"][class "red"]] "Hello" (p "World")))
 (attrs->hash (get-attrs tx))
-(hash->attrs '#hash((class . "red") (id . "top")))
+(hash->attrs '#hasheq((class . "red") (id . "top")))
 ]
 
 @defproc[
