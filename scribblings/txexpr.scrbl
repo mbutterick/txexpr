@@ -525,6 +525,33 @@ Ordinarily, the result of the split operation is to remove the elements that mat
 ]
 
 
+@deftogether[(
+@defproc[
+(findf*-txexpr
+[tx txexpr?]
+[pred procedure?])
+(or/c #f (listof txexpr-element?))]
+
+@defproc[
+(findf-txexpr
+[tx txexpr?]
+[pred procedure?])
+(or/c #f txexpr-element?)]
+)]
+Like @racket[splitf-txexpr], but only retrieve the elements that match @racket[_pred]. @racket[findf*-txexpr] retrieves all results; @racket[findf-txexpr] only the first. In both cases, if there are no matches, you get @racket[#f].
+
+@examples[#:eval my-eval
+(define tx '(div "Wonderful day" (meta "weather" "good")
+                 "for a walk" (meta "dog" "Roxy")))
+(define is-meta? (λ(x) (and (txexpr? x) (eq? 'meta (get-tag x)))))
+(findf*-txexpr tx is-meta?)
+(findf-txexpr tx is-meta?)
+(define is-zimzam? (λ(x) (and (txexpr? x) (eq? 'zimzam (get-tag x)))))
+(findf*-txexpr tx is-zimzam?)
+(findf-txexpr tx is-zimzam?)
+]
+
+
 @defproc[
 (check-txexprs-equal?
 [tx1 txexpr?]

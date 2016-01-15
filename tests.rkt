@@ -196,13 +196,19 @@
  
  (define split-this-tx '(root (meta "foo" "bar") "hello" "world" (meta "foo2" "bar2") 
                               (em "goodnight" "moon" (meta "foo3" "bar3"))))
- (define split-predicate (λ(x) (and (txexpr? x) (equal? 'meta (car x)))))
+ (define split-predicate (λ(x) (and (txexpr? x) (eq? 'meta (get-tag x)))))
  (check-txexprs-equal? (call-with-values (λ() (splitf-txexpr split-this-tx split-predicate)) list) 
                        (list '(root "hello" "world" (em "goodnight" "moon")) '((meta "foo" "bar") (meta "foo2" "bar2") (meta "foo3" "bar3"))))
  
  (define split-proc (λ(x) '(div "foo")))
  (check-txexprs-equal? (call-with-values (λ() (splitf-txexpr split-this-tx split-predicate split-proc)) list) 
                        (list '(root (div "foo") "hello" "world" (div "foo") (em "goodnight" "moon" (div "foo"))) '((meta "foo" "bar") (meta "foo2" "bar2") (meta "foo3" "bar3"))))
+
+ (define false-pred (λ(x) (and (txexpr? x) (eq? 'nonexistent-tag (get-tag x)))))
+ (check-equal? (findf*-txexpr split-this-tx split-predicate) '((meta "foo" "bar") (meta "foo2" "bar2") (meta "foo3" "bar3")))
+ (check-false (findf*-txexpr split-this-tx false-pred))
+ (check-equal? (findf-txexpr split-this-tx split-predicate) '(meta "foo" "bar"))
+ (check-false (findf-txexpr split-this-tx false-pred))
  
  (check-equal? (xexpr->html '(root (script "3 > 2") "Why is 3 > 2?"))
                "<root><script>3 > 2</script>Why is 3 &gt; 2?</root>"))

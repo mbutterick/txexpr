@@ -346,6 +346,18 @@
               (error 'splitf-txexpr "Bad input")) (reverse matches)))
 
 
+(define+provide+safe (findf*-txexpr tx pred)
+  (txexpr? procedure? . -> . (or/c #f txexpr-elements?))
+  (define-values (_ matches) (splitf-txexpr tx pred))
+  (and (pair? matches) matches))
+
+
+(define+provide+safe (findf-txexpr tx pred)
+  (txexpr? procedure? . -> . (or/c #f txexpr-element?))
+  (define matches (findf*-txexpr tx pred))
+  (and matches (car matches)))
+
+
 (define+provide+safe (xexpr->html x)
   (xexpr? . -> . string?)
   (define (->cdata x)
