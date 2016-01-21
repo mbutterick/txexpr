@@ -166,16 +166,24 @@
  (check-false (attrs-equal? '((color "red")(shape "circle"))
                             '((color "red"))))
  
+ (check-true (attrs-equal? '((foo "bar")(foo "zam")(zing "zong"))
+                           '((foo "zam")(zing "zong")(foo "bar"))))
+ (check-false (attrs-equal? '((foo "bar")(foo "zam")(zing "zong"))
+                            '((foo "different")(zing "zong")(foo "bar"))))
  
  
- (check-equal? (merge-attrs 'foo "bar") '((foo "bar")))
- (check-equal? (merge-attrs '(foo "bar")) '((foo "bar")))
- (check-equal? (merge-attrs '((foo "bar"))) '((foo "bar")))
- (check-equal? (merge-attrs "foo" 'bar) '((foo "bar")))
- (check-equal? (merge-attrs "foo" "bar" "goo" "gar") '((foo "bar")(goo "gar")))
- (check-equal? (merge-attrs (merge-attrs "foo" "bar" "goo" "gar") "hee" "haw") 
-               '((foo "bar")(goo "gar")(hee "haw")))
- (check-equal? (merge-attrs '((foo "bar")(goo "gar")) "foo" "haw") '((foo "haw")(goo "gar")))
+ (define-simple-check (check-attrs-equal? attrs1 attrs2) (attrs-equal? attrs1 attrs2))
+ 
+ (check-attrs-equal? '((foo "bar")(foo "zam")) '((foo "zam")(foo "bar")))
+ 
+ (check-attrs-equal? (merge-attrs 'foo "bar") '((foo "bar")))
+ (check-attrs-equal? (merge-attrs '(foo "bar")) '((foo "bar")))
+ (check-attrs-equal? (merge-attrs '((foo "bar"))) '((foo "bar")))
+ (check-attrs-equal? (merge-attrs "foo" 'bar) '((foo "bar")))
+ (check-attrs-equal? (merge-attrs "foo" "bar" "goo" "gar") '((foo "bar")(goo "gar")))
+ (check-attrs-equal? (merge-attrs (merge-attrs "foo" "bar" "goo" "gar") "hee" "haw") 
+                     '((foo "bar")(goo "gar")(hee "haw")))
+ (check-attrs-equal? (merge-attrs '((foo "bar")(goo "gar")) "foo" "haw") '((foo "haw")(goo "gar")))
  
  
  (check-txexprs-equal? (remove-attrs '(p ((foo "bar")) "hi")) '(p "hi"))
@@ -186,6 +194,8 @@
                                      '(p "foo" "bar" (em "square"))) 
                        '(p "boing" "boing" (em "boing")))
  
+ (check-equal? (attr-set '(p) 'foo "zim") '(p ((foo "zim"))))
+ (check-equal? (attr-set '(p ((foo "bar")(foo "zam"))) 'foo "zim") '(p ((foo "zim"))))
  
  (check-equal? (attr-ref* '(root ((foo "bar")) "hello" "world" (meta ((foo "zam")) "bar2") 
                                  (em ((foo "zam")) "goodnight" "moon")) 'foo) '("bar" "zam" "zam"))
@@ -203,7 +213,7 @@
  (define split-proc (λ(x) '(div "foo")))
  (check-txexprs-equal? (call-with-values (λ() (splitf-txexpr split-this-tx split-predicate split-proc)) list) 
                        (list '(root (div "foo") "hello" "world" (div "foo") (em "goodnight" "moon" (div "foo"))) '((meta "foo" "bar") (meta "foo2" "bar2") (meta "foo3" "bar3"))))
-
+ 
  (define false-pred (λ(x) (and (txexpr? x) (eq? 'nonexistent-tag (get-tag x)))))
  (check-equal? (findf*-txexpr split-this-tx split-predicate) '((meta "foo" "bar") (meta "foo2" "bar2") (meta "foo3" "bar3")))
  (check-false (findf*-txexpr split-this-tx false-pred))

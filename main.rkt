@@ -1,5 +1,5 @@
 #lang racket/base
-(require sugar/define sugar/coerce racket/string racket/list racket/match xml)
+(require sugar/define sugar/coerce sugar/list racket/string racket/list racket/match xml rackunit)
 (provide cdata? cdata valid-char? xexpr->string xexpr?) ; from xml
 
 ;; Section 2.2 of XML 1.1
@@ -16,19 +16,27 @@
   (or (txexpr? x) (xexpr? x) (my-valid-char? x)))
 
 
+(define+provide+safe (txexpr? x #:short-only? [short-only #f])
+  predicate/c
+  (define short-sym 'short)
+  (and (pair? x)
+       (txexpr-tag? (car x))
+       (let ([result (or (and (empty? (cdr x)) short-sym)
+                         ;; separate the my-xexpr? tail match from the rest.
+                         ;; as a recursive operation, it's potentially time-consuming.
+                         (and (andmap my-xexpr? (cddr x))
+                              (match (cadr x)
+                                [(list (? txexpr-attr?) ...) #t]
+                                [(? my-xexpr?) short-sym]
+                                [else #f])))])
+         (and result (if short-only
+                         (eq? result short-sym)
+                         #t)))))
+
+
 (define+provide+safe (txexpr-short? x)
   predicate/c
-  (match x
-    [(list (? symbol? name) (? my-xexpr?) ...) #t]
-    [else #f]))
-
-
-(define+provide+safe (txexpr? x)
-  predicate/c
-  (or (txexpr-short? x)
-      (match x
-        [(list (? symbol?) (list (list (? symbol?) (? string?)) ...) (? my-xexpr?) ...) #t]
-        [else #f])))
+  (txexpr? x #:short-only? #t))
 
 
 (define+provide+safe (txexpr-tag? x)
@@ -48,19 +56,9 @@
     [else #f]))
 
 
-(define+provide+safe (txexpr-attrs? x)
-  predicate/c
-  (and (list? x) (andmap txexpr-attr? x)))
-
-
 (define+provide+safe (txexpr-element? x)
   predicate/c
   (my-xexpr? x))
-
-
-(define+provide+safe (txexpr-elements? x)
-  predicate/c
-  (and (list? x) (andmap txexpr-element? x)))
 
 
 (define+provide+safe (txexpr-attr-key? x)
@@ -78,14 +76,20 @@
   (string? x))
 
 
-(define+provide+safe (txexpr-attr-values? x)
-  predicate/c
-  (and (list? x) (andmap txexpr-attr-value? x)))
-
-
 (define+provide+safe (can-be-txexpr-attr-value? x)
   predicate/c
   (or (symbol? x) (string? x)))
+
+
+(define-syntax-rule (define-plural plural-id pred)
+  (define+provide+safe (plural-id x)
+    predicate/c
+    (and (list? x) (andmap pred x))))
+
+(define-plural txexpr-attrs? txexpr-attr?)
+(define-plural txexpr-elements? txexpr-element?)
+(define-plural txexpr-attr-values? txexpr-attr-value?)
+(define-plural list-of-can-be-txexpr-attrs? can-be-txexpr-attrs?)
 
 
 (define+provide+safe (can-be-txexpr-attrs? x)
@@ -94,11 +98,6 @@
                                   txexpr-attrs?
                                   can-be-txexpr-attr-key?
                                   can-be-txexpr-attr-value?)))
-
-
-(define+provide+safe (list-of-can-be-txexpr-attrs? xs)
-  predicate/c
-  (and (list? xs) (andmap can-be-txexpr-attrs? xs)))
 
 
 (define (validate-txexpr-attrs x #:context [txexpr-context #f])
@@ -163,8 +162,10 @@
                 (format "This is not a list of txexpr-elements: ~v" elements)]
                [else ""]))))
 
-(define make-txexpr txexpr)
+
+(define make-txexpr txexpr) ; for backward compatability
 (provide+safe make-txexpr)
+
 
 (define+provide+safe (txexpr->values x)
   (txexpr? . -> . (values symbol? txexpr-attrs? txexpr-elements?))
@@ -200,7 +201,7 @@
 ;; helpers. we are getting a string or symbol
 (define+provide+safe (->txexpr-attr-key x)
   (can-be-txexpr-attr-key? . -> . txexpr-attr-key?)
-  (if (string? x) (string->symbol x) x))
+  (->symbol x))
 
 
 (define+provide+safe (->txexpr-attr-value x)
@@ -230,27 +231,19 @@
 
 (define+provide+safe (hash->attrs attr-hash)
   (hash? . -> . txexpr-attrs?)
-  (map (λ(k) (list k (hash-ref attr-hash k))) (hash-keys attr-hash)))
+  (map flatten (hash->list attr-hash)))
 
 
 (define+provide+safe (attrs-have-key? x key)
   ((or/c txexpr-attrs? txexpr?) can-be-txexpr-attr-key? . -> . boolean?)
   (define attrs (if (txexpr-attrs? x) x (get-attrs x)))
-  (hash-has-key? (attrs->hash attrs) (->txexpr-attr-key key)))
-
-
-(define+provide+safe (attrs-equal? x1 x2)
-  ((or/c txexpr-attrs? txexpr?) (or/c txexpr-attrs? txexpr?) . -> . boolean?)
-  (define attrs-tx1 (attrs->hash (if (txexpr-attrs? x1) x1 (get-attrs x1))))
-  (define attrs-tx2 (attrs->hash (if (txexpr-attrs? x2) x2 (get-attrs x2))))
-  (and 
-   (= (length (hash-keys attrs-tx1)) (length (hash-keys attrs-tx2)))
-   (for/and ([(key value) (in-hash attrs-tx1)])
-            (equal? (hash-ref attrs-tx2 key) value))))
+  (and (assq (->txexpr-attr-key key) attrs) #t))
 
 
 (define+provide+safe (attr-set tx key value)
   (txexpr? can-be-txexpr-attr-key? can-be-txexpr-attr-value? . -> . txexpr?)
+  ;; unlike others, this uses hash operations to guarantee that your attr-set
+  ;; is the only one remaining.
   (define new-attrs 
     (hash->attrs (hash-set (attrs->hash (get-attrs tx))
                            (->txexpr-attr-key key)
@@ -268,14 +261,15 @@
 
 (define+provide+safe (attr-set* tx . kvs)
   ((txexpr?) #:rest (listof (or/c can-be-txexpr-attr-key? can-be-txexpr-attr-value?)) . ->* . txexpr?)
-  (define attrs-to-set (apply hash kvs))
-  (foldl (λ(kv-pair acc-tx) (attr-set acc-tx (car kv-pair) (cdr kv-pair))) tx (hash->list attrs-to-set)))
+  (foldl (λ(kv acc-tx) (attr-set acc-tx (first kv) (second kv))) tx (slice-at kvs 2)))
 
 
 (define+provide+safe (attr-ref tx key)
   (txexpr? can-be-txexpr-attr-key? . -> . txexpr-attr-value?)
-  (with-handlers ([exn:fail? (λ(e) (error (format "attr-ref: no value found for key ~v" key)))])
-    (hash-ref (attrs->hash (get-attrs tx)) (->txexpr-attr-key key))))
+  (define result (assq (->txexpr-attr-key key) (get-attrs tx)))
+  (unless result
+    (error (format "attr-ref: no value found for key ~v" key)))
+  (second result))
 
 
 (define+provide+safe (attr-ref* tx key)
@@ -284,27 +278,25 @@
   (let loop ([tx tx])
     (when (and (txexpr? tx) (attrs-have-key? tx key) (attr-ref tx key))
       (set! results (cons (attr-ref tx key) results))
-      (map (λ(e) (loop e)) (get-elements tx))
+      (map loop (get-elements tx))
       (void)))
   (reverse results))
 
 
 ;; convert list of alternating keys & values to attr
+;; with override behavior (using hash)
 (define+provide+safe (merge-attrs . items)
   (() #:rest list-of-can-be-txexpr-attrs? . ->* . txexpr-attrs?)
-  (define attrs-hash (apply attrs->hash items))
-  ;; sort needed for predictable results for unit tests
-  (define sorted-hash-keys (sort (hash-keys attrs-hash)
-                                 (λ(a b) (string<? (->string a) (->string b)))))
-  `(,@(map (λ(key) (list key (hash-ref attrs-hash key))) sorted-hash-keys)))
+  (hash->attrs (apply attrs->hash items)))
 
 
 (define+provide+safe (remove-attrs x)
   (txexpr? . -> . txexpr?)
-  (if (txexpr? x)
-      (let-values ([(tag attr elements) (txexpr->values x)])
-        (make-txexpr tag null (map remove-attrs elements)))
-      x))
+  (let loop ([x x])
+    (if (txexpr? x)
+        (let-values ([(tag attr elements) (txexpr->values x)])
+          (make-txexpr tag null (map loop elements)))
+        x)))
 
 
 (define+provide+safe (map-elements/exclude proc x exclude-test)
@@ -323,7 +315,7 @@
 
 (define+provide+safe (map-elements proc x)
   (procedure? txexpr? . -> . txexpr?)
-  (map-elements/exclude proc x (λ(x) #f)))
+  (map-elements/exclude proc x (λ _ #f)))
 
 
 ;; function to split tag out of txexpr
@@ -341,9 +333,9 @@
                                                    (map do-extraction elements))))]
       [else x]))
   (define tx-extracted (do-extraction tx)) ;; do this first to fill matches
-  (values (if (txexpr? tx-extracted)
-              tx-extracted
-              (error 'splitf-txexpr "Bad input")) (reverse matches)))
+  (unless (txexpr? tx-extracted)
+    (error 'splitf-txexpr "Bad input"))
+  (values tx-extracted (reverse matches)))
 
 
 (define+provide+safe (findf*-txexpr tx pred)
@@ -375,9 +367,8 @@
                                                    (map loop (get-elements x))))]
                      [else x]))))
 
-(require rackunit)
-(provide+safe check-txexprs-equal?)
-(define-simple-check (check-txexprs-equal? tx1 tx2)
+
+(define (txexprs-equal? tx1 tx2)
   ;; txexprs are deemed equal if they differ only in the ordering of attributes.
   ;; therefore, to check them, 1) sort their attributes, 2) straight list comparison.
   ;; use letrec because `define-simple-check` wants an expression in <=6.2
@@ -394,8 +385,21 @@
                              x))])
     (equal? (sort-attrs tx1) (sort-attrs tx2))))
 
-(check-txexprs-equal? '(p ((b "foo")(a "bar")) (span ((d "foo")(c "bar"))))
-                      '(p ((a "bar")(b "foo")) (span ((c "bar")(d "foo")))))
-;; two attrs with same key
-(check-txexprs-equal? '(p ((a "foo")(a "bar")))
-                      '(p ((a "bar")(a "foo"))))
+
+(define+provide+safe (attrs-equal? x1 x2)
+  ((or/c txexpr-attrs? txexpr?) (or/c txexpr-attrs? txexpr?) . -> . boolean?)
+  (define attrs-tx1 (if (txexpr-attrs? x1) x1 (get-attrs x1)))
+  (define attrs-tx2 (if (txexpr-attrs? x2) x2 (get-attrs x2)))
+  (txexprs-equal? `(div ,attrs-tx1) `(div ,attrs-tx2)))
+
+
+(provide+safe check-txexprs-equal?)
+(define-simple-check (check-txexprs-equal? tx1 tx2)
+  (txexprs-equal? tx1 tx2))
+
+(module+ test
+  (check-txexprs-equal? '(p ((b "foo")(a "bar")) (span ((d "foo")(c "bar"))))
+                        '(p ((a "bar")(b "foo")) (span ((c "bar")(d "foo")))))
+  ;; two attrs with same key
+  (check-txexprs-equal? '(p ((a "foo")(a "bar")))
+                        '(p ((a "bar")(a "foo")))))
