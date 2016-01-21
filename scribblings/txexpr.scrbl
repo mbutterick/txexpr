@@ -310,7 +310,7 @@ hash-eq?]
 
 @defproc[
 (hash->attrs
-[h hash-eq?])
+[h hash?])
 txexpr-attrs?]
 
 )]
