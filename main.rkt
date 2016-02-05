@@ -1,6 +1,7 @@
 #lang racket/base
 (require sugar/define sugar/coerce sugar/list racket/string racket/list racket/match xml rackunit)
 (provide cdata? cdata valid-char? xexpr->string xexpr?) ; from xml
+(provide empty) ; from racket/list
 
 ;; Section 2.2 of XML 1.1
 ;; (XML 1.0 is slightly different and more restrictive)
