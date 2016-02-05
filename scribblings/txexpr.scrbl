@@ -35,7 +35,7 @@ Fast mode is the default, which you get by importing the module in the usual way
 Safe mode enables the function contracts documented below. Use safe mode by importing the module as @code{(require (submod txexpr safe))}.
 
 
-@section{What’s a txexpr?}
+@section{What’s a tagged X-expression (aka txexpr)?}
 
 It's an X-expression with the following grammar:
 
