@@ -1,4 +1,5 @@
 #lang info
+(define version "0.1")
 (define collection "txexpr")
 (define deps '("base" "sugar" "rackunit-lib"))
 (define update-implies '("sugar"))

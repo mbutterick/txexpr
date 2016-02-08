@@ -121,13 +121,19 @@
  (check-equal? (->txexpr-attr-value 'foo) "foo")
  
  (check-equal? (attrs->hash '((foo "bar"))) '#hasheq((foo . "bar")))
- (check-equal? (attrs->hash '((foo "bar")) '(foo "fraw")) '#hasheq((foo . "fraw")))
- (check-equal? (attrs->hash '((foo "bar")) '(foo "fraw") 'foo "dog") '#hasheq((foo . "dog")))
+ (check-equal? (attrs->hash '((foo "bar") (foo "fraw"))) '#hasheq((foo . "bar")))
+ (check-equal? (attrs->hash #:hash-style? #t '((foo "bar") (foo "fraw"))) '#hasheq((foo . "fraw")))
+ (check-equal? (attrs->hash '((foo "bar")) '(foo "fraw")) '#hasheq((foo . "bar")))
+ (check-equal? (attrs->hash '((foo "bar")) '(foo "fraw") 'foo "dog") '#hasheq((foo . "bar")))
+ (check-exn exn:fail:contract? (λ _ (attrs->hash 'foo "bar" 'zam)))
  
  (check-equal? (apply set (hash->attrs '#hash((foo . "bar")(hee . "haw"))))
                (apply set '((foo "bar")(hee "haw"))))
  
  (check-equal? (attr-ref '(p ((foo "bar"))) 'foo) "bar")
+ (check-exn exn:fail? (λ _ (attr-ref '(p ((foo "bar"))) 'zam)))
+ (check-equal? (attr-ref '(p ((foo "bar"))) 'zam 42) 42)
+ (check-equal? (attr-ref '(p ((foo "bar"))) 'zam (λ _ (* 6 7))) 42)
  (check-txexprs-equal? (attr-set '(p ((foo "bar"))) 'foo "fraw") '(p ((foo "fraw"))))
  (check-txexprs-equal? (attr-set* '(p ((foo "bar"))) 'foo "fraw") '(p ((foo "fraw"))))
  (check-true (let ([result (attr-set* '(p ((foo "bar"))) 'foo "fraw" 'zim 'zam)])
@@ -176,16 +182,6 @@
  
  (check-attrs-equal? '((foo "bar")(foo "zam")) '((foo "zam")(foo "bar")))
  
- (check-attrs-equal? (merge-attrs 'foo "bar") '((foo "bar")))
- (check-attrs-equal? (merge-attrs '(foo "bar")) '((foo "bar")))
- (check-attrs-equal? (merge-attrs '((foo "bar"))) '((foo "bar")))
- (check-attrs-equal? (merge-attrs "foo" 'bar) '((foo "bar")))
- (check-attrs-equal? (merge-attrs "foo" "bar" "goo" "gar") '((foo "bar")(goo "gar")))
- (check-attrs-equal? (merge-attrs (merge-attrs "foo" "bar" "goo" "gar") "hee" "haw") 
-                     '((foo "bar")(goo "gar")(hee "haw")))
- (check-attrs-equal? (merge-attrs '((foo "bar")(goo "gar")) "foo" "haw") '((foo "haw")(goo "gar")))
- 
- 
  (check-txexprs-equal? (remove-attrs '(p ((foo "bar")) "hi")) '(p "hi"))
  (check-txexprs-equal? (remove-attrs '(p ((foo "bar")) "hi" (p ((foo "bar")) "hi"))) '(p "hi" (p "hi")))
  
@@ -196,12 +192,8 @@
  
  (check-equal? (attr-set '(p) 'foo "zim") '(p ((foo "zim"))))
  (check-equal? (attr-set '(p ((foo "bar")(foo "zam"))) 'foo "zim") '(p ((foo "zim"))))
- 
- (check-equal? (attr-ref* '(root ((foo "bar")) "hello" "world" (meta ((foo "zam")) "bar2") 
-                                 (em ((foo "zam")) "goodnight" "moon")) 'foo) '("bar" "zam" "zam"))
- 
- (check-equal? (attr-ref* '(root ((foo "bar")) "hello" "world" (meta ((foo "zam")) "bar2") 
-                                 (em ((foo "zam")) "goodnight" "moon")) 'nonexistent-key) '())
+
+ (check-exn exn:fail:contract? (λ _ (attr-set* '(p) 'foo "bar" 'zam)))
  
  
  (define split-this-tx '(root (meta "foo" "bar") "hello" "world" (meta "foo2" "bar2") 
