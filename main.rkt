@@ -289,23 +289,13 @@
         x)))
 
 
-(define (map-elements/exclude proc x exclude-test)
-  (procedure? txexpr? procedure? . -> . txexpr?)
-  (cond
-    [(txexpr? x) 
-     (if (exclude-test x)
-         x
-         (let-values ([(tag attr elements) (txexpr->values x)])
-           (txexpr tag attr 
-                   (map (λ(x)(map-elements/exclude proc x exclude-test)) elements))))]
-    ;; externally the function only accepts txexpr,
-    ;; but internally we don't care
-    [else (proc x)]))
-
 
 (define+provide+safe (map-elements proc x)
   (procedure? txexpr? . -> . txexpr?)
-  (map-elements/exclude proc x (λ _ #f)))
+  (proc (if (txexpr? x) 
+            (let-values ([(tag attr elements) (txexpr->values x)])
+              (txexpr tag attr (map (λ(e)(map-elements proc e)) elements)))
+            x)))
 
 
 ;; function to split tag out of txexpr

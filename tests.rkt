@@ -187,8 +187,8 @@
  
  
  (check-txexprs-equal? (map-elements (λ(x) (if (string? x) "boing" x))  
-                                     '(p "foo" "bar" (em "square"))) 
-                       '(p "boing" "boing" (em "boing")))
+                                     '(p ((id "zam")) "foo" "bar" (em "square"))) 
+                       '(p ((id "zam")) "boing" "boing" (em "boing")))
  
  (check-equal? (attr-set '(p) 'foo "zim") '(p ((foo "zim"))))
  (check-equal? (attr-set '(p ((foo "bar")(foo "zam"))) 'foo "zim") '(p ((foo "zim"))))
