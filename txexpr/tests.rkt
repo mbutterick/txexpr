@@ -1,27 +1,27 @@
 #lang racket/base
-(require (for-syntax racket/base racket/syntax))
+(require (for-syntax racket/base racket/syntax syntax/strip-context))
 
 ;; use a separate test file to avoid cycle in loading
 (define-syntax (test-safe-and-unsafe stx)
   (syntax-case stx ()
     [(_ exprs ...)
-     (with-syntax ([sym (syntax-e (generate-temporary))]
-                   [sym2 (syntax-e (generate-temporary))]) 
-       (datum->syntax stx `(begin
-                             (module ,(syntax->datum #'sym) racket
-                               (require rackunit "main.rkt")
-                               (define-syntax (values->list stx)
-                                 (syntax-case stx ()
-                                   [(_ values-expr) #'(call-with-values (λ () values-expr) list)]))
-                               ,@(syntax->datum #'(exprs ...)))
-                             (require ',(syntax->datum #'sym))
-                             (module ,(syntax->datum #'sym2) racket
-                               (require rackunit (submod "main.rkt" safe))
-                               (define-syntax (values->list stx)
-                                 (syntax-case stx ()
-                                   [(_ values-expr) #'(call-with-values (λ () values-expr) list)]))
-                               ,@(syntax->datum #'(exprs ...)))
-                             (require ',(syntax->datum #'sym2))) stx))]))
+     (with-syntax ([module-without-contracts (generate-temporary)]
+                   [module-with-contracts (generate-temporary)]) 
+       (replace-context stx #'(begin
+                                (module module-without-contracts racket
+                                  (require rackunit "main.rkt")
+                                  (define-syntax (values->list stx)
+                                    (syntax-case stx ()
+                                      [(_ values-expr) #'(call-with-values (λ () values-expr) list)]))
+                                  exprs ...)
+                                (require 'module-without-contracts)
+                                (module module-with-contracts racket
+                                  (require rackunit (submod "main.rkt" safe))
+                                  (define-syntax (values->list stx)
+                                    (syntax-case stx ()
+                                      [(_ values-expr) #'(call-with-values (λ () values-expr) list)]))
+                                  exprs ...)
+                                (require 'module-with-contracts))))]))
 
 (test-safe-and-unsafe
  
@@ -192,7 +192,7 @@
  
  (check-equal? (attr-set '(p) 'foo "zim") '(p ((foo "zim"))))
  (check-equal? (attr-set '(p ((foo "bar")(foo "zam"))) 'foo "zim") '(p ((foo "zim"))))
-
+ 
  (check-exn exn:fail:contract? (λ _ (attr-set* '(p) 'foo "bar" 'zam)))
  
  
