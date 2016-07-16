@@ -1,7 +1,8 @@
 #lang racket/base
-(require sugar/define sugar/coerce sugar/list racket/string racket/list racket/match xml rackunit)
+(require sugar/define sugar/coerce sugar/list racket/string racket/list xml)
 (provide cdata? cdata valid-char? xexpr->string xexpr?) ; from xml
 (provide empty) ; from racket/list
+
 
 ;; Section 2.2 of XML 1.1
 ;; (XML 1.0 is slightly different and more restrictive)
@@ -17,27 +18,27 @@
   (or (txexpr? x) (xexpr? x) (my-valid-char? x)))
 
 
-(define+provide+safe (txexpr? x #:short-only? [short-only #f])
+(define+provide+safe (txexpr? x [short-only #f])
   predicate/c
-  (define short-sym 'short)
+  (define short 'short)
   (and (pair? x)
        (txexpr-tag? (car x))
-       (let ([result (or (and (empty? (cdr x)) short-sym)
+       (let ([result (or (and (empty? (cdr x)) short)
                          ;; separate the my-xexpr? tail match from the rest.
                          ;; as a recursive operation, it's potentially time-consuming.
                          (and (andmap my-xexpr? (cddr x))
-                              (match (cadr x)
-                                [(list (? txexpr-attr?) ...) #t]
-                                [(? my-xexpr?) short-sym]
+                              (cond 
+                                [(txexpr-attrs? (cadr x)) #t]
+                                [(my-xexpr? (cadr x)) short]
                                 [else #f])))])
          (and result (if short-only
-                         (eq? result short-sym)
+                         (eq? result short)
                          #t)))))
 
 
 (define+provide+safe (txexpr-short? x)
   predicate/c
-  (txexpr? x #:short-only? #t))
+  (txexpr? x 'short-only))
 
 
 (define+provide+safe (txexpr-tag? x)
@@ -45,16 +46,12 @@
   (symbol? x))
 
 
-(define+provide+safe (txexpr-tags? x)
-  predicate/c
-  (and (list? x) (andmap txexpr-tag? x)))
-
-
 (define+provide+safe (txexpr-attr? x)
   predicate/c
-  (match x
-    [(list (? symbol?) (? string?)) #t]
-    [else #f]))
+  (and (list? x)
+       (= 2 (length x))
+       (symbol? (car x))
+       (string? (cadr x))))
 
 
 (define+provide+safe (txexpr-element? x)
@@ -87,6 +84,8 @@
     predicate/c
     (and (list? x) (andmap pred x))))
 
+
+(define-plural txexpr-tags? txexpr-tag?)
 (define-plural txexpr-attrs? txexpr-attr?)
 (define-plural txexpr-elements? txexpr-element?)
 (define-plural txexpr-attr-values? txexpr-attr-value?)
@@ -95,10 +94,11 @@
 
 (define+provide+safe (can-be-txexpr-attrs? x)
   predicate/c
-  (ormap (λ(test) (test x)) (list txexpr-attr?
-                                  txexpr-attrs?
-                                  can-be-txexpr-attr-key?
-                                  can-be-txexpr-attr-value?)))
+  (for/or ([test (in-list (list txexpr-attr?
+                                txexpr-attrs?
+                                can-be-txexpr-attr-key?
+                                can-be-txexpr-attr-value?))])
+          (test x)))
 
 
 (define (validate-txexpr-attrs x #:context [txexpr-context #f])
@@ -111,7 +111,7 @@
                       "are not valid attributes"
                       "is not in the form '(symbol \"string\")")))))
   (cond
-    [(and (list? x) (> (length x) 0) (andmap txexpr-attr? x)) x]
+    [(and (list? x) (positive? (length x)) (andmap txexpr-attr? x)) x]
     [else (error (string-append "validate-txexpr-attrs: "
                                 (if txexpr-context (format "in ~v, " txexpr-context) "")
                                 (format "~v is not a valid list of attributes ~a" x
@@ -208,6 +208,7 @@
 (define+provide+safe (->txexpr-attr-value x)
   (can-be-txexpr-attr-value? . -> . txexpr-attr-value?)
   (->string x))
+
 
 (define identity (λ (x) x))
 (define+provide+safe (attrs->hash #:hash-style? [hash-style-priority #f] . items-in)
