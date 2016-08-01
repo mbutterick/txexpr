@@ -164,6 +164,11 @@
                [else ""]))))
 
 
+(define+provide+safe (txexpr* tag [attrs null] . elements)
+  ((symbol?) (txexpr-attrs?) #:rest txexpr-elements? . ->* . txexpr?)
+  (txexpr tag attrs elements))
+
+
 (define make-txexpr txexpr) ; for backward compatability
 (provide+safe make-txexpr)
 

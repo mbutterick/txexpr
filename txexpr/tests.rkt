@@ -89,6 +89,12 @@
  (check-txexprs-equal? (txexpr 'p null '("foo" "bar")) '(p "foo" "bar"))
  (check-txexprs-equal? (txexpr 'p '((key "value")) (list "foo" "bar")) 
                        '(p ((key "value")) "foo" "bar"))
+
+ (check-txexprs-equal? (txexpr* 'p) '(p))
+ (check-txexprs-equal? (txexpr* 'p '((key "value"))) '(p ((key "value"))))
+ (check-txexprs-equal? (txexpr* 'p null "foo" "bar") '(p "foo" "bar"))
+ (check-txexprs-equal? (txexpr* 'p '((key "value")) "foo" "bar") 
+                       '(p ((key "value")) "foo" "bar"))
  
  (check-equal? (values->list (txexpr->values '(p))) 
                (values->list (values 'p null null)))

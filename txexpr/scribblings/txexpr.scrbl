@@ -228,6 +228,24 @@ Assemble a @racket[_txexpr] from its parts. If you don't have attributes, but yo
 (get-attrs tx) (get-elements tx))
 ]
 
+@defproc[
+(txexpr*
+[tag txexpr-tag?] 
+[attrs txexpr-attrs? @empty]
+[element txexpr-element?] ...)
+txexpr?]
+Like @racket[txexpr], but takes an indefinite number of @racket[_element] arguments, which together are treated as the list of elements for the resulting @racket[_txexpr]. A notational convenience.
+
+@examples[#:eval my-eval
+(txexpr* 'div)
+(txexpr* 'div '() "Hello" '(p "World"))
+(txexpr* 'div '((id "top")))
+(txexpr* 'div '((id "top")) "Hello" '(p "World"))
+(define tx '(div ((id "top")) "Hello" (p "World")))
+(apply txexpr* (get-tag tx) 
+(get-attrs tx) (get-elements tx))
+]
+
 
 @deftogether[(
 @defproc[
