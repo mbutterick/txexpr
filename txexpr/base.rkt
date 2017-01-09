@@ -150,18 +150,17 @@
 
 (define+provide+safe (txexpr tag [attrs null] [elements null])
   ((symbol?) (txexpr-attrs? txexpr-elements?) . ->* . txexpr?)
+  (unless (txexpr-tag? tag)
+    (error 'txexpr (format "This is not a txexpr-tag: ~v" tag)))
+  (unless (txexpr-attrs? attrs)
+    (error 'txexpr (format "This is not a list of txexpr-attrs: ~v" attrs)))
+  (unless (txexpr-elements? elements)
+    (error 'txexpr (format "This is not a list of txexpr-elements: ~v" elements)))
+  
   (define result (cons tag (append (if (empty? attrs) empty (list attrs)) elements)))
-  (if (txexpr? result)
-      result
-      (error 'txexpr
-             (cond
-               [(not (txexpr-tag? tag))
-                (format "This is not a txexpr-tag: ~v" tag)]
-               [(not (txexpr-attrs? attrs))
-                (format "This is not a list of txexpr-attrs: ~v" attrs)]
-               [(not (txexpr-elements? elements))
-                (format "This is not a list of txexpr-elements: ~v" elements)]
-               [else ""]))))
+  (unless (txexpr? result)
+    (error 'txexpr "not a txexpr"))
+  result)
 
 
 (define+provide+safe (txexpr* tag [attrs null] . elements)
