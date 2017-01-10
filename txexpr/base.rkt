@@ -98,7 +98,7 @@
                                 txexpr-attrs?
                                 can-be-txexpr-attr-key?
                                 can-be-txexpr-attr-value?))])
-    (test x)))
+          (test x)))
 
 
 (define (validate-txexpr-attrs x #:context [txexpr-context #f])
@@ -148,6 +148,12 @@
     [else (error 'validate-txexpr (format "~v: not an X-expression" x))]))
 
 
+(define (txexpr-unsafe tag attrs elements)
+  (cons tag (if (empty? attrs)
+                elements
+                (cons attrs elements))))
+
+
 (define (txexpr-base func-name tag attrs elements)
   (unless (txexpr-tag? tag)
     (raise-argument-error func-name "txexpr-tag?" tag))
@@ -155,10 +161,7 @@
     (raise-argument-error func-name "txexpr-attrs?" attrs))
   (unless (txexpr-elements? elements)
     (raise-argument-error func-name "txexpr-elements?" elements))
-  
-  (cons tag (append (if (empty? attrs)
-                        empty
-                        (list attrs)) elements)))
+  (txexpr-unsafe tag attrs elements))
 
 
 (define+provide+safe (txexpr tag [attrs null] [elements null])
@@ -184,8 +187,7 @@
 
 (define+provide+safe (txexpr->list x)
   (txexpr? . -> . list?)
-  (define-values (tag attrs elements) (txexpr->values x))
-  (list tag attrs elements))
+  (call-with-values (λ () (txexpr->values x)) list))
 
 
 ;; convenience functions to retrieve only one part of txexpr
@@ -209,12 +211,12 @@
 ;; helpers. we are getting a string or symbol
 (define+provide+safe (->txexpr-attr-key x)
   (can-be-txexpr-attr-key? . -> . txexpr-attr-key?)
-  (->symbol x))
+  (if (string? x) (string->symbol x) x))
 
 
 (define+provide+safe (->txexpr-attr-value x)
   (can-be-txexpr-attr-value? . -> . txexpr-attr-value?)
-  (->string x))
+  (if (symbol? x) (symbol->string x) x))
 
 
 (define identity (λ (x) x))
@@ -232,9 +234,9 @@
   (for/hasheq ([sublist (in-list ((if hash-style-priority
                                       identity
                                       reverse) (slice-at items 2)))])
-    (let ([key (->txexpr-attr-key (first sublist))]
-          [value (->txexpr-attr-value (second sublist))])
-      (values key value))))
+              (let ([key (->txexpr-attr-key (first sublist))]
+                    [value (->txexpr-attr-value (second sublist))])
+                (values key value))))
 
 
 (define+provide+safe (hash->attrs attr-hash)
@@ -299,7 +301,7 @@
   (procedure? txexpr? . -> . txexpr?)
   (proc (if (txexpr? x) 
             (let-values ([(tag attrs elements) (txexpr->values x)])
-              (txexpr tag attrs (map (λ(e)(map-elements proc e)) elements)))
+              (txexpr-unsafe tag attrs (map (λ(e)(map-elements proc e)) elements)))
             x)))
 
 
@@ -352,5 +354,5 @@
                                    ->cdata
                                    loop)])
            ;; a little faster than `txexpr` since we know the pieces are valid
-           (cons tag (append (list attrs) (map proc elements))))
+           (txexpr-unsafe tag attrs (map proc elements)))
          x))))
