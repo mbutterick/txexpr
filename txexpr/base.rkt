@@ -352,5 +352,5 @@
                                    ->cdata
                                    loop)])
            ;; a little faster than `txexpr` since we know the pieces are valid
-           (cons tag (append attrs (map proc elements))))
+           (cons tag (append (list attrs) (map proc elements))))
          x))))
