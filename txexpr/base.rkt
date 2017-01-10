@@ -98,7 +98,7 @@
                                 txexpr-attrs?
                                 can-be-txexpr-attr-key?
                                 can-be-txexpr-attr-value?))])
-          (test x)))
+    (test x)))
 
 
 (define (validate-txexpr-attrs x #:context [txexpr-context #f])
@@ -148,24 +148,27 @@
     [else (error 'validate-txexpr (format "~v: not an X-expression" x))]))
 
 
-(define+provide+safe (txexpr tag [attrs null] [elements null])
-  ((symbol?) (txexpr-attrs? txexpr-elements?) . ->* . txexpr?)
+(define (txexpr-base func-name tag attrs elements)
   (unless (txexpr-tag? tag)
-    (raise-argument-error 'txexpr "txexpr-tag?" tag))
+    (raise-argument-error func-name "txexpr-tag?" tag))
   (unless (txexpr-attrs? attrs)
-    (raise-argument-error 'txexpr "txexpr-attrs?" attrs))
+    (raise-argument-error func-name "txexpr-attrs?" attrs))
   (unless (txexpr-elements? elements)
-    (raise-argument-error 'txexpr "txexpr-elements?" elements))
+    (raise-argument-error func-name "txexpr-elements?" elements))
   
-  (define result (cons tag (append (if (empty? attrs) empty (list attrs)) elements)))
-  (unless (txexpr? result)
-    (error 'txexpr "not a txexpr"))
-  result)
+  (cons tag (append (if (empty? attrs)
+                        empty
+                        (list attrs)) elements)))
+
+
+(define+provide+safe (txexpr tag [attrs null] [elements null])
+  ((txexpr-tag?) (txexpr-attrs? txexpr-elements?) . ->* . txexpr?)
+  (txexpr-base 'txexpr tag attrs elements))
 
 
 (define+provide+safe (txexpr* tag [attrs null] . elements)
-  ((symbol?) (txexpr-attrs?) #:rest txexpr-elements? . ->* . txexpr?)
-  (txexpr tag attrs elements))
+  ((txexpr-tag?) (txexpr-attrs?) #:rest txexpr-elements? . ->* . txexpr?)
+  (txexpr-base 'txexpr* tag attrs elements))
 
 
 (define make-txexpr txexpr) ; for backward compatability
@@ -173,7 +176,7 @@
 
 
 (define+provide+safe (txexpr->values x)
-  (txexpr? . -> . (values symbol? txexpr-attrs? txexpr-elements?))
+  (txexpr? . -> . (values txexpr-tag? txexpr-attrs? txexpr-elements?))
   (if (txexpr-short? x)
       (values (car x) '() (cdr x))
       (values (car x) (cadr x) (cddr x))))
@@ -181,8 +184,8 @@
 
 (define+provide+safe (txexpr->list x)
   (txexpr? . -> . list?)
-  (define-values (tag attrs content) (txexpr->values x))
-  (list tag attrs content))
+  (define-values (tag attrs elements) (txexpr->values x))
+  (list tag attrs elements))
 
 
 ;; convenience functions to retrieve only one part of txexpr
@@ -193,7 +196,7 @@
 
 (define+provide+safe (get-attrs x)
   (txexpr? . -> . txexpr-attrs?)
-  (define-values (tag attrs content) (txexpr->values x))
+  (define-values (tag attrs elements) (txexpr->values x))
   attrs)
 
 
@@ -229,9 +232,9 @@
   (for/hasheq ([sublist (in-list ((if hash-style-priority
                                       identity
                                       reverse) (slice-at items 2)))])
-              (let ([key (->txexpr-attr-key (first sublist))]
-                    [value (->txexpr-attr-value (second sublist))])
-                (values key value))))
+    (let ([key (->txexpr-attr-key (first sublist))]
+          [value (->txexpr-attr-value (second sublist))])
+      (values key value))))
 
 
 (define+provide+safe (hash->attrs attr-hash)
@@ -249,6 +252,7 @@
   (txexpr? can-be-txexpr-attr-key? can-be-txexpr-attr-value? . -> . txexpr?)
   (attr-set* tx key value))
 
+
 (define+provide+safe (attr-set* tx . kvs)
   ((txexpr?) #:rest (listof (or/c can-be-txexpr-attr-key? can-be-txexpr-attr-value?)) . ->* . txexpr?)
   ;; unlike others, this uses hash operations to guarantee that your attr-set
@@ -261,8 +265,7 @@
             (append-map (λ(sublist)
                           (list (->txexpr-attr-key (first sublist))
                                 (->txexpr-attr-value (second sublist)))) (slice-at kvs 2)))))
-  (txexpr (get-tag tx) new-attrs (get-elements tx)))
-
+  (txexpr-base 'attr-set* (get-tag tx) new-attrs (get-elements tx)))
 
 
 (define+provide+safe (attr-join tx key value)
@@ -271,7 +274,6 @@
                                             (attr-ref tx key)
                                             "")))
   (attr-set tx key (string-join `(,@starting-values ,value) " ")))      
-
 
 
 (define+provide+safe (attr-ref tx key [failure-result (λ _ (raise (make-exn:fail:contract (format "attr-ref: no value found for key ~v" key) (current-continuation-marks))))])
@@ -284,22 +286,20 @@
           failure-result)))
 
 
-
 (define+provide+safe (remove-attrs x)
   (txexpr? . -> . txexpr?)
   (let loop ([x x])
     (if (txexpr? x)
-        (let-values ([(tag attr elements) (txexpr->values x)])
-          (txexpr tag null (map loop elements)))
+        (let-values ([(tag attrs elements) (txexpr->values x)])
+          (cons tag (map loop elements)))
         x)))
-
 
 
 (define+provide+safe (map-elements proc x)
   (procedure? txexpr? . -> . txexpr?)
   (proc (if (txexpr? x) 
-            (let-values ([(tag attr elements) (txexpr->values x)])
-              (txexpr tag attr (map (λ(e)(map-elements proc e)) elements)))
+            (let-values ([(tag attrs elements) (txexpr->values x)])
+              (txexpr tag attrs (map (λ(e)(map-elements proc e)) elements)))
             x)))
 
 
@@ -307,19 +307,19 @@
 (define deleted-signal (gensym))
 (define+provide+safe (splitf-txexpr tx pred [proc (λ(x) deleted-signal)])
   ((txexpr? procedure?) (procedure?) . ->* . (values txexpr? txexpr-elements?))
+  (unless (txexpr? tx)
+    (raise-argument-error 'splitf-txexpr "txexpr?" tx))
   (define matches null)
   (define (do-extraction x)
     (cond
-      [(pred x) (begin  ; store matched item and return processed value
-                  (set! matches (cons x matches))
-                  (proc x))]
-      [(txexpr? x) (let-values([(tag attr elements) (txexpr->values x)]) 
-                     (txexpr tag attr (filter (λ(e) (not (equal? e deleted-signal)))
-                                              (map do-extraction elements))))]
+      [(pred x) ;; store matched item and return processed value
+       (set! matches (cons x matches))
+       (proc x)]
+      [(txexpr? x) (let-values([(tag attrs elements) (txexpr->values x)]) 
+                     (txexpr tag attrs (filter (λ(e) (not (eq? e deleted-signal)))
+                                               (map do-extraction elements))))]
       [else x]))
   (define tx-extracted (do-extraction tx)) ;; do this first to fill matches
-  (unless (txexpr? tx-extracted)
-    (error 'splitf-txexpr "Bad input"))
   (values tx-extracted (reverse matches)))
 
 
@@ -335,20 +335,22 @@
   (and matches (car matches)))
 
 
+;; don't use "![CDATA[...]]" wrapper in HTML, it's not consistent with the spec
+(define (->cdata x)
+  (if (string? x)
+      (cdata #f #f x)
+      x))
+
+
 (define+provide+safe (xexpr->html x)
   (xexpr? . -> . string?)
-  (define (->cdata x)
-    (cond
-      [(cdata? x) x]
-      ; don't use "![CDATA[...]]" wrapper in HTML, it's not consistent with the spec
-      [(string? x) (cdata #f #f x)] 
-      [else x]))
-  (xexpr->string (let loop ([x x])
-                   (cond
-                     [(txexpr? x) (if (member (get-tag x) '(script style))
-                                      (txexpr (get-tag x) (get-attrs x)
-                                              (map ->cdata (get-elements x)))
-                                      (txexpr (get-tag x) (get-attrs x)
-                                              (map loop (get-elements x))))]
-                     [else x]))))
-
+  (xexpr->string
+   (let loop ([x x])
+     (if (txexpr? x)
+         (let*-values ([(tag attrs elements) (txexpr->values x)]
+                       [(proc) (if (memq tag '(script style))
+                                   ->cdata
+                                   loop)])
+           ;; a little faster than `txexpr` since we know the pieces are valid
+           (cons tag (append attrs (map proc elements))))
+         x))))

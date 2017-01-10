@@ -4,24 +4,23 @@
 ;; use a separate test file to avoid cycle in loading
 (define-syntax (test-safe-and-unsafe stx)
   (syntax-case stx ()
-    [(_ exprs ...)
+    [(_ . exprs)
      (with-syntax ([module-without-contracts (generate-temporary)]
                    [module-with-contracts (generate-temporary)]) 
-       (replace-context stx #'(begin
-                                (module module-without-contracts racket
-                                  (require rackunit "main.rkt")
-                                  (define-syntax (values->list stx)
-                                    (syntax-case stx ()
-                                      [(_ values-expr) #'(call-with-values (λ () values-expr) list)]))
-                                  exprs ...)
-                                (require 'module-without-contracts)
-                                (module module-with-contracts racket
-                                  (require rackunit (submod "main.rkt" safe))
-                                  (define-syntax (values->list stx)
-                                    (syntax-case stx ()
-                                      [(_ values-expr) #'(call-with-values (λ () values-expr) list)]))
-                                  exprs ...)
-                                (require 'module-with-contracts))))]))
+       (replace-context stx
+                        #'(begin
+                            (module module-without-contracts racket
+                              (require rackunit "main.rkt")
+                              (define-syntax-rule (values->list values-expr)
+                                (call-with-values (λ () values-expr) list))
+                              . exprs)
+                            (require 'module-without-contracts)
+                            (module module-with-contracts racket
+                              (require rackunit (submod "main.rkt" safe))
+                              (define-syntax-rule (values->list values-expr)
+                                (call-with-values (λ () values-expr) list))
+                              . exprs)
+                            (require 'module-with-contracts))))]))
 
 (test-safe-and-unsafe
  
