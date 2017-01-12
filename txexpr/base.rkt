@@ -211,12 +211,12 @@
 ;; helpers. we are getting a string or symbol
 (define+provide+safe (->txexpr-attr-key x)
   (can-be-txexpr-attr-key? . -> . txexpr-attr-key?)
-  (if (string? x) (string->symbol x) x))
+  (->symbol x))
 
 
 (define+provide+safe (->txexpr-attr-value x)
   (can-be-txexpr-attr-value? . -> . txexpr-attr-value?)
-  (if (symbol? x) (symbol->string x) x))
+  (->string x))
 
 
 (define identity (λ (x) x))
