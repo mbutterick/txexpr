@@ -1,5 +1,5 @@
 #lang racket/base
-(require sugar/define sugar/coerce sugar/list racket/string racket/list xml)
+(require sugar/define racket/string racket/list xml)
 (provide cdata? cdata valid-char? xexpr->string xexpr?) ; from xml
 (provide empty) ; from racket/list
 
@@ -20,19 +20,18 @@
 
 (define+provide+safe (txexpr? x [short-only #f])
   predicate/c
-  (define short 'short)
   (and (pair? x)
        (txexpr-tag? (car x))
-       (let ([result (or (and (empty? (cdr x)) short)
+       (let ([result (or (and (empty? (cdr x)) 'short)
                          ;; separate the my-xexpr? tail match from the rest.
                          ;; as a recursive operation, it's potentially time-consuming.
                          (and (andmap my-xexpr? (cddr x))
                               (cond 
                                 [(txexpr-attrs? (cadr x)) #t]
-                                [(my-xexpr? (cadr x)) short]
+                                [(my-xexpr? (cadr x)) 'short]
                                 [else #f])))])
          (and result (if short-only
-                         (eq? result short)
+                         (eq? result 'short)
                          #t)))))
 
 
@@ -50,8 +49,8 @@
   predicate/c
   (and (list? x)
        (= 2 (length x))
-       (symbol? (car x))
-       (string? (cadr x))))
+       (txexpr-attr-key? (first x))
+       (txexpr-attr-value? (second x))))
 
 
 (define+provide+safe (txexpr-element? x)
@@ -207,12 +206,18 @@
 ;; helpers. we are getting a string or symbol
 (define+provide+safe (->txexpr-attr-key x)
   (can-be-txexpr-attr-key? . -> . txexpr-attr-key?)
-  (->symbol x))
+  (cond
+    [(symbol? x) x]
+    [(string? x) (string->symbol x)]
+    [else (raise-argument-error '->txexpr-attr-key "can-be-txexpr-attr-key?" x)]))
 
 
 (define+provide+safe (->txexpr-attr-value x)
   (can-be-txexpr-attr-value? . -> . txexpr-attr-value?)
-  (->string x))
+  (cond
+    [(string? x) x]
+    [(symbol? x) (symbol->string x)]
+    [else (raise-argument-error '->txexpr-attr-value "can-be-txexpr-attr-value?" x)]))
 
 
 (define identity (λ (x) x))
@@ -222,17 +227,21 @@
   ;; but still need this function to make sure that 'foo and "foo" are treated as the same hash key
   (define items (flatten items-in))
   (unless (even? (length items))
-    (raise-argument-error 'attrs->hash "even number of arguments" items-in))
+    (raise-argument-error 'attrs->hash "argument list of even length" (length items-in)))
   ;; hasheq loop will overwrite earlier values with later.
   ;; but earlier attributes need priority (see https://www.w3.org/TR/xml/#attdecls)
   ;; thus reverse the pairs.
   ;; priority-inverted will defeat this assumption, and allow later attributes to overwrite earlier.
   (for/hasheq ([sublist (in-list ((if hash-style-priority
                                       identity
-                                      reverse) (slice-at items 2)))])
-              (let ([key (->txexpr-attr-key (first sublist))]
-                    [value (->txexpr-attr-value (second sublist))])
-                (values key value))))
+                                      reverse) (for/list (#:when (pair? items)
+                                                          [(k ki) (in-indexed items)]
+                                                          [v (in-list (cdr items))]
+                                                          #:when (even? ki))
+                                                         (list k v))))])
+              (let ([key (first sublist)]
+                    [value (second sublist)])
+                (values (->txexpr-attr-key key) (->txexpr-attr-value value)))))
 
 
 (define+provide+safe (hash->attrs attr-hash)
@@ -262,7 +271,13 @@
      (apply hash-set* (attrs->hash (get-attrs tx))
             (append-map (λ (sublist)
                           (list (->txexpr-attr-key (first sublist))
-                                (->txexpr-attr-value (second sublist)))) (slice-at kvs 2)))))
+                                (->txexpr-attr-value (second sublist))))
+                        (let ([items kvs])
+                          (for/list (#:when (pair? items)
+                                     [(k ki) (in-indexed items)]
+                                     [v (in-list (cdr items))]
+                                     #:when (even? ki))
+                                    (list k v)))))))
   (txexpr-base 'attr-set* (get-tag tx) new-attrs (get-elements tx)))
 
 
@@ -271,7 +286,7 @@
   (define starting-values (string-split (if (attrs-have-key? tx key)
                                             (attr-ref tx key)
                                             "")))
-  (attr-set tx key (string-join `(,@starting-values ,value) " ")))      
+  (attr-set tx key (string-join (append starting-values (list value)) " ")))      
 
 
 (define+provide+safe (attr-ref tx key [failure-result (λ _ (raise (make-exn:fail:contract (format "attr-ref: no value found for key ~v" key) (current-continuation-marks))))])
@@ -308,16 +323,16 @@
   (unless (txexpr? tx)
     (raise-argument-error 'splitf-txexpr "txexpr?" tx))
   (define matches null)
-  (define (do-extraction x)
+  (define (extract! x)
     (cond
       [(pred x) ;; store matched item and return processed value
        (set! matches (cons x matches))
        (proc x)]
       [(txexpr? x) (let-values([(tag attrs elements) (txexpr->values x)]) 
                      (txexpr tag attrs (filter (λ (e) (not (eq? e deleted-signal)))
-                                               (map do-extraction elements))))]
+                                               (map extract! elements))))]
       [else x]))
-  (define tx-extracted (do-extraction tx)) ;; do this first to fill matches
+  (define tx-extracted (extract! tx)) ;; do this first to fill matches
   (values tx-extracted (reverse matches)))
 
 
