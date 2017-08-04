@@ -105,8 +105,8 @@
   (define (make-reason)
     (if (not (list? x)) 
         (format "because ~v is not a list" x)
-        (let ([bad-attrs (filter (λ(i) (not (txexpr-attr? i))) x)])
-          (format "because ~a ~a" (string-join (map (λ(ba) (format "~v" ba)) bad-attrs) " and ")
+        (let ([bad-attrs (filter (λ (i) (not (txexpr-attr? i))) x)])
+          (format "because ~a ~a" (string-join (map (λ (ba) (format "~v" ba)) bad-attrs) " and ")
                   (if (> (length bad-attrs) 1)
                       "are not valid attributes"
                       "is not in the form '(symbol \"string\")")))))
@@ -131,19 +131,15 @@
 ;; todo: rewrite this recurively so errors can be pinpointed (for debugging)
 (define+provide+safe (validate-txexpr x)
   (any/c . -> . txexpr?)
-  (define-syntax-rule (validate-txexpr-attrs-with-context e)
-    (validate-txexpr-attrs e #:context x))
-  (define-syntax-rule (validate-txexpr-element-with-context e)
-    (validate-txexpr-element e #:context x))
   (cond
     [(txexpr-short? x) x]
     [(txexpr? x) (and
-                  (validate-txexpr-attrs-with-context (get-attrs x))
-                  (andmap (λ(e) (validate-txexpr-element-with-context e)) (get-elements x)) x)]
+                  (validate-txexpr-attrs (get-attrs x) #:context x)
+                  (andmap (λ (e) (validate-txexpr-element e #:context x)) (get-elements x)) x)]
     [(and (list? x) (symbol? (car x)))
      (and
-      (andmap (λ(e) (validate-txexpr-element-with-context e)) (get-elements x))
-      (validate-txexpr-attrs-with-context (get-attrs x)))]
+      (andmap (λ (e) (validate-txexpr-element e #:context x)) (get-elements x))
+      (validate-txexpr-attrs (get-attrs x) #:context x))]
     [(list? x) (error 'validate-txexpr (format "~v is a list but it doesn't start with a symbol" x))]
     [else (error 'validate-txexpr (format "~v: not an X-expression" x))]))
 
@@ -264,7 +260,7 @@
   (define new-attrs 
     (hash->attrs
      (apply hash-set* (attrs->hash (get-attrs tx))
-            (append-map (λ(sublist)
+            (append-map (λ (sublist)
                           (list (->txexpr-attr-key (first sublist))
                                 (->txexpr-attr-value (second sublist)))) (slice-at kvs 2)))))
   (txexpr-base 'attr-set* (get-tag tx) new-attrs (get-elements tx)))
@@ -301,13 +297,13 @@
   (procedure? txexpr? . -> . txexpr?)
   (proc (if (txexpr? x) 
             (let-values ([(tag attrs elements) (txexpr->values x)])
-              (txexpr-unsafe tag attrs (map (λ(e)(map-elements proc e)) elements)))
+              (txexpr-unsafe tag attrs (map (λ (e)(map-elements proc e)) elements)))
             x)))
 
 
 ;; function to split tag out of txexpr
 (define deleted-signal (gensym))
-(define+provide+safe (splitf-txexpr tx pred [proc (λ(x) deleted-signal)])
+(define+provide+safe (splitf-txexpr tx pred [proc (λ (x) deleted-signal)])
   ((txexpr? procedure?) (procedure?) . ->* . (values txexpr? txexpr-elements?))
   (unless (txexpr? tx)
     (raise-argument-error 'splitf-txexpr "txexpr?" tx))
@@ -318,7 +314,7 @@
        (set! matches (cons x matches))
        (proc x)]
       [(txexpr? x) (let-values([(tag attrs elements) (txexpr->values x)]) 
-                     (txexpr tag attrs (filter (λ(e) (not (eq? e deleted-signal)))
+                     (txexpr tag attrs (filter (λ (e) (not (eq? e deleted-signal)))
                                                (map do-extraction elements))))]
       [else x]))
   (define tx-extracted (do-extraction tx)) ;; do this first to fill matches
