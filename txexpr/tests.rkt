@@ -121,9 +121,11 @@
  
  (check-equal? (->txexpr-attr-key "foo") 'foo)
  (check-equal? (->txexpr-attr-key 'foo) 'foo)
+ (check-equal? (->txexpr-attr-key (string->path "foo")) 'foo)
  
  (check-equal? (->txexpr-attr-value "foo") "foo")
  (check-equal? (->txexpr-attr-value 'foo) "foo")
+ (check-equal? (->txexpr-attr-value (string->path "foo")) "foo")
  
  (check-equal? (attrs->hash '((foo "bar"))) '#hasheq((foo . "bar")))
  (check-equal? (attrs->hash '((foo "bar") (foo "fraw"))) '#hasheq((foo . "bar")))

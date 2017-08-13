@@ -1,5 +1,5 @@
 #lang racket/base
-(require sugar/define racket/string racket/list xml)
+(require sugar/define sugar/coerce racket/string racket/list xml)
 (provide cdata? cdata valid-char? xexpr->string xexpr?) ; from xml
 (provide empty) ; from racket/list
 
@@ -65,7 +65,7 @@
 
 (define+provide+safe (can-be-txexpr-attr-key? x)
   predicate/c
-  (or (symbol? x) (string? x)))
+  (symbolish? x))
 
 
 (define+provide+safe (txexpr-attr-value? x)
@@ -75,7 +75,7 @@
 
 (define+provide+safe (can-be-txexpr-attr-value? x)
   predicate/c
-  (or (symbol? x) (string? x)))
+  (stringish? x))
 
 
 (define-syntax-rule (define-plural plural-id pred)
@@ -206,18 +206,16 @@
 ;; helpers. we are getting a string or symbol
 (define+provide+safe (->txexpr-attr-key x)
   (can-be-txexpr-attr-key? . -> . txexpr-attr-key?)
-  (cond
-    [(symbol? x) x]
-    [(string? x) (string->symbol x)]
-    [else (raise-argument-error '->txexpr-attr-key "can-be-txexpr-attr-key?" x)]))
+  (unless (can-be-txexpr-attr-key? x)
+    (raise-argument-error '->txexpr-attr-key "can-be-txexpr-attr-key?" x))
+  (->symbol x))
 
 
 (define+provide+safe (->txexpr-attr-value x)
   (can-be-txexpr-attr-value? . -> . txexpr-attr-value?)
-  (cond
-    [(string? x) x]
-    [(symbol? x) (symbol->string x)]
-    [else (raise-argument-error '->txexpr-attr-value "can-be-txexpr-attr-value?" x)]))
+  (unless (can-be-txexpr-attr-value? x)
+      (raise-argument-error '->txexpr-attr-value "can-be-txexpr-attr-value?" x))
+  (->string x))
 
 
 (define identity (λ (x) x))
