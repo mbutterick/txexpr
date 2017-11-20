@@ -214,7 +214,7 @@
 (define+provide+safe (->txexpr-attr-value x)
   (can-be-txexpr-attr-value? . -> . txexpr-attr-value?)
   (unless (can-be-txexpr-attr-value? x)
-      (raise-argument-error '->txexpr-attr-value "can-be-txexpr-attr-value?" x))
+    (raise-argument-error '->txexpr-attr-value "can-be-txexpr-attr-value?" x))
   (->string x))
 
 
@@ -352,16 +352,21 @@
       (cdata #f #f x)
       x))
 
+;; but treat CDATA strings correctly anyhow, because that's friendly
+(define (cdata-string? x)
+  (and (string? x) (regexp-match #rx"^<!\\[CDATA\\[.*\\]\\]>$" x) #t))
 
 (define+provide+safe (xexpr->html x)
   (xexpr? . -> . string?)
   (xexpr->string
    (let loop ([x x])
-     (if (txexpr? x)
-         (let*-values ([(tag attrs elements) (txexpr->values x)]
-                       [(proc) (if (memq tag '(script style))
-                                   ->cdata
-                                   loop)])
-           ;; a little faster than `txexpr` since we know the pieces are valid
-           (txexpr-unsafe tag attrs (map proc elements)))
-         x))))
+     (cond
+       [(txexpr? x)
+        (let*-values ([(tag attrs elements) (txexpr->values x)]
+                      [(proc) (if (memq tag '(script style))
+                                  ->cdata
+                                  loop)])
+          ;; a little faster than `txexpr` since we know the pieces are valid
+          (txexpr-unsafe tag attrs (map proc elements)))]
+       [(cdata-string? x) (->cdata x)]
+       [else x]))))

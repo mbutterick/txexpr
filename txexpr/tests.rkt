@@ -220,4 +220,7 @@
  (check-false (findf-txexpr split-this-tx false-pred))
  
  (check-equal? (xexpr->html '(root (script "3 > 2") "Why is 3 > 2?"))
-               "<root><script>3 > 2</script>Why is 3 &gt; 2?</root>"))
+               "<root><script>3 > 2</script>Why is 3 &gt; 2?</root>")
+
+ (check-equal? (xexpr->html '(root (div "<![CDATA[3 > 2]]>") "Why is 3 > 2?"))
+               "<root><div><![CDATA[3 > 2]]></div>Why is 3 &gt; 2?</root>"))
