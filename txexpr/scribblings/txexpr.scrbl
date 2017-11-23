@@ -386,7 +386,7 @@ txexpr?]
 [value can-be-txexpr-attr-value?] ... ... )
 txexpr?]
 )]
-Set the value of attribute @racket[_key] to @racket[_value] in @racket[_txexpr]. Return the updated @racket[_txexpr]. Duplicate attributes, if they exist, are resolved using @racket[attr->hash]. @racket[attr-set] only accepts one key and one value; @racket[attr-set*] accepts any number.
+Set the value of attribute @racket[_key] to @racket[_value] in @racket[_txexpr]. Return the updated @racket[_txexpr]. Duplicate attributes, if they exist, are resolved using @racket[attrs->hash]. @racket[attr-set] only accepts one key and one value; @racket[attr-set*] accepts any number.
 
 @examples[#:eval my-eval
 (define tx '(div ((class "red")(id "top")) "Hello" (p "World")))
