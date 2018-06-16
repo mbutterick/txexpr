@@ -10,13 +10,13 @@
        (replace-context stx
                         #'(begin
                             (module module-without-contracts racket
-                              (require rackunit "main.rkt")
+                              (require rackunit "../main.rkt")
                               (define-syntax-rule (values->list values-expr)
                                 (call-with-values (λ () values-expr) list))
                               . exprs)
                             (require 'module-without-contracts)
                             (module module-with-contracts racket
-                              (require rackunit (submod "main.rkt" safe))
+                              (require rackunit (submod "../main.rkt" safe))
                               (define-syntax-rule (values->list values-expr)
                                 (call-with-values (λ () values-expr) list))
                               . exprs)
