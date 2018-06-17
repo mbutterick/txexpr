@@ -3,7 +3,8 @@
 @; for documentation purposes, use the xexpr? from xml.
 @; the one in txexpr is just to patch over an issue with
 @; `valid-char?` in Racket 6.
-@(require scribble/eval (for-label racket txexpr xml rackunit))
+@(require scribble/eval
+          (for-label racket txexpr txexpr/stx xml rackunit))
 
 @(define my-eval (make-base-eval))
 @(my-eval `(require txexpr xml rackunit))
@@ -550,6 +551,110 @@ If ordering of attributes is relevant to your test, then just use @racket[check-
   (displayln "equal"))
 ]
 
+
+@section{Syntax Versions of X-expressions}
+
+@(define stx-eval (make-base-eval))
+@(stx-eval `(require txexpr txexpr/stx xml rackunit))
+
+@defmodule[txexpr/stx]{
+This module provides functions for destructuring TX-expressions
+that might be wrapped in syntax objects.
+}
+
+@defproc[(stx-xexpr? [v any/c]) boolean?]{
+A predicate for X-expressions that might be wrapped in syntax
+(or have parts of them wrapped in syntax). It returns
+@racket[#true] for values that would become normal X-expressions
+with @racket[(syntax->datum (datum->syntax #f v))].
+
+@examples[#:eval stx-eval
+(stx-xexpr? "A leaf on the wind")
+(stx-xexpr? #'"A leaf in a bin")
+(stx-xexpr? '(div ((id "top")) "Hello" (p "World")))
+(stx-xexpr? #'(div ((id "top")) "Hello" (p "World")))
+(stx-xexpr? `(div ((id ,#'"top")) "Hello" ,#'(p "World")))
+]}
+
+@defproc[(stx-txexpr? [v any/c]) boolean?]{
+A predicate for Tagged X-expressions that might be wrapped in
+syntax. It returns @racket[#true] for values that become one
+of these with @racket[(syntax->datum (datum->syntax #f v))]:
+
+@racketgrammar*[
+#:literals (list)
+[txexpr (list tag attrs xexpr ...)
+        (list tag xexpr ...)]
+]
+
+@examples[#:eval stx-eval
+(stx-txexpr? "A block at the top")
+(stx-txexpr? '(div ((id "top")) "A block beneath a" (p "tag")))
+(stx-txexpr? #'(div ((id "top")) "A block beneath a" (p "tag")))
+(stx-txexpr? #'(div "A block beneath a" (p "tag")))
+]}
+
+@deftogether[[
+  @defproc[(stx-txexpr-tag? [v any/c]) boolean?]
+  @defproc[(stx-txexpr-attrs? [v any/c]) boolean?]
+]]{
+Predicates for sub-parts of TX-expressions that might be wrapped
+in syntax. There return @racket[#true] for values that become
+@racket[txexpr-tag?]s or @racket[txexpr-attrs?]s when unwrapped
+with @racket[(syntax->datum (datum->syntax #f v))].
+
+@examples[#:eval stx-eval
+(stx-txexpr-tag? 'div)
+(stx-txexpr-tag? #'div)
+(stx-txexpr-tag? 'analogous)
+(stx-txexpr-tag? #'analogous)
+(stx-txexpr-attrs? '())
+(stx-txexpr-attrs? #'())
+(stx-txexpr-attrs? '((id "top") (style "color: blue")))
+(stx-txexpr-attrs? #'((id "top") (style "color: blue")))
+(stx-txexpr-attrs? `((id "top") (style ,#'"color: blue")))
+]}
+
+@deftogether[[
+  @defproc[(stx-txexpr-tag [tx stx-txexpr?]) stx-txexpr-tag?]
+  @defproc[(stx-txexpr-attrs [tx stx-txexpr?]) stx-txexpr-attrs?]
+  @defproc[(stx-txexpr-elements [tx stx-txexpr?]) (listof stx-txexpr?)]
+]]{
+Accessor functions for the tag, attributes, and elements of a
+txexpr that might be wrapped in syntax. Note that these functions
+work whether the input is wrapped in syntax or not, and that
+the results may or may not be wrapped in syntax, depending on
+whether the input was wrapped.
+
+@examples[#:eval stx-eval
+(define tx1 '(div ((id "top")) "Hello" (p "World")))
+(define tx2 #'(div ((id "top")) "Hello" (p "World")))
+(stx-txexpr-tag tx1)
+(stx-txexpr-tag tx2)
+(stx-txexpr-attrs tx1)
+(stx-txexpr-attrs tx2)
+(stx-txexpr-elements tx1)
+(stx-txexpr-elements tx2)
+]}
+
+@deftogether[[
+  @defproc[(stx-txexpr->values [tx stx-txexpr?])
+           (values stx-txexpr-tag? stx-txexpr-attrs? (listof stx-txexpr?))]
+  @defproc[(stx-txexpr->list [tx stx-txexpr?])
+           (list/c stx-txexpr-tag? stx-txexpr-attrs? (listof stx-txexpr?))]
+]]{
+These functions break up a TX-expression into its components.
+@racket[stx-txexpr->values] returns them as three values, and
+@racket[stx-txexpr->list] returns them as a three-element list.
+
+@examples[#:eval stx-eval
+(stx-txexpr->values '(div))
+(stx-txexpr->list '(div))
+(stx-txexpr->values #'(div))
+(stx-txexpr->values #'(div "Hello" (p "World")))
+(stx-txexpr->values #'(div ((id "top")) "Hello" (p "World")))
+(stx-txexpr->values `(div ((id "top")) "Hello" ,#'(p "World")))
+]}
 
 @section{License & source code}
 

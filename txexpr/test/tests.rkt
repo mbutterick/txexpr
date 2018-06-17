@@ -10,15 +10,11 @@
        (replace-context stx
                         #'(begin
                             (module module-without-contracts racket
-                              (require rackunit "main.rkt")
-                              (define-syntax-rule (values->list values-expr)
-                                (call-with-values (λ () values-expr) list))
+                              (require rackunit "../main.rkt" "check-values.rkt")
                               . exprs)
                             (require 'module-without-contracts)
                             (module module-with-contracts racket
-                              (require rackunit (submod "main.rkt" safe))
-                              (define-syntax-rule (values->list values-expr)
-                                (call-with-values (λ () values-expr) list))
+                              (require rackunit (submod "../main.rkt" safe) "check-values.rkt")
                               . exprs)
                             (require 'module-with-contracts))))]))
 
@@ -95,14 +91,14 @@
  (check-txexprs-equal? (txexpr* 'p '((key "value")) "foo" "bar") 
                        '(p ((key "value")) "foo" "bar"))
  
- (check-equal? (values->list (txexpr->values '(p))) 
-               (values->list (values 'p null null)))
- (check-equal? (values->list (txexpr->values '(p "foo"))) 
-               (values->list (values 'p null '("foo"))))
- (check-equal? (values->list (txexpr->values '(p ((key "value"))))) 
-               (values->list (values 'p '((key "value")) null)))
- (check-equal? (values->list (txexpr->values '(p ((key "value")) "foo"))) 
-               (values->list (values 'p '((key "value")) '("foo"))))
+ (check-values=? (txexpr->values '(p))
+                 (values 'p null null))
+ (check-values=? (txexpr->values '(p "foo"))
+                 (values 'p null '("foo")))
+ (check-values=? (txexpr->values '(p ((key "value"))))
+                 (values 'p '((key "value")) null))
+ (check-values=? (txexpr->values '(p ((key "value")) "foo"))
+                 (values 'p '((key "value")) '("foo")))
  
  (check-equal? (values->list (txexpr->values '(p))) 
                (txexpr->list '(p)))
