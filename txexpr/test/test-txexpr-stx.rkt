@@ -49,9 +49,9 @@
 
 (check-pred stx-txexpr-attrs? '())
 (check-pred stx-txexpr-attrs? #'())
-(check-pred stx-txexpr-attrs? '((id "top") (stlye "color: blue")))
-(check-pred stx-txexpr-attrs? #'((id "top") (stlye "color: blue")))
-(check-pred stx-txexpr-attrs? `((id "top") (stlye ,#'"color: blue")))
+(check-pred stx-txexpr-attrs? '((id "top") (style "color: blue")))
+(check-pred stx-txexpr-attrs? #'((id "top") (style "color: blue")))
+(check-pred stx-txexpr-attrs? `((id "top") (style ,#'"color: blue")))
 
 ;; ---------------------------------------------------------
 
