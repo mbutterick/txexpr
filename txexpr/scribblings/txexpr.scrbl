@@ -610,9 +610,9 @@ with @racket[(syntax->datum (datum->syntax #f v))].
 (stx-txexpr-tag? #'analogous)
 (stx-txexpr-attrs? '())
 (stx-txexpr-attrs? #'())
-(stx-txexpr-attrs? '((id "top") (stlye "color: blue")))
-(stx-txexpr-attrs? #'((id "top") (stlye "color: blue")))
-(stx-txexpr-attrs? `((id "top") (stlye ,#'"color: blue")))
+(stx-txexpr-attrs? '((id "top") (style "color: blue")))
+(stx-txexpr-attrs? #'((id "top") (style "color: blue")))
+(stx-txexpr-attrs? `((id "top") (style ,#'"color: blue")))
 ]}
 
 @deftogether[[
