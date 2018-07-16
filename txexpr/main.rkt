@@ -10,4 +10,5 @@
         (provide (all-from-out (submod modname safe))))) ...))
 
 (r+p "base.rkt"
+     "stx.rkt"
      "check.rkt")
