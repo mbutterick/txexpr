@@ -437,7 +437,7 @@ Recursively apply @racket[_proc] to all elements, leaving tags and attributes al
 
 @examples[#:eval my-eval
 (define tx '(div "Hello!" (p "Welcome to" (strong "Mars"))))
-(define upcaser (λ(x) (if (string? x) (string-upcase x) x)))
+(define upcaser (λ (x) (if (string? x) (string-upcase x) x)))
 (map upcaser tx)
 (map-elements upcaser tx)
 ]
@@ -447,7 +447,7 @@ In practice, most @racket[_txexpr-element]s are strings. But it's unwise to pass
 @examples[#:eval my-eval
 (define tx '(p "Welcome to" (strong "Mars" amp "Sons")))
 (map-elements string-upcase tx)
-(define upcaser (λ(x) (if (string? x) (string-upcase x) x)))
+(define upcaser (λ (x) (if (string? x) (string-upcase x) x)))
 (map-elements upcaser tx)
 ]
 
@@ -456,13 +456,13 @@ In practice, most @racket[_txexpr-element]s are strings. But it's unwise to pass
 (splitf-txexpr
 [tx txexpr?]
 [pred procedure?]
-[replace-proc procedure? (λ(x) null)])
+[replace-proc procedure? (λ (x) null)])
 (values txexpr? (listof txexpr-element?))]
 Recursively descend through @racket[_txexpr] and extract all elements that match @racket[_pred]. Returns two values: a @racket[_txexpr] with the matching elements removed, and the list of matching elements. Sort of esoteric, but I've needed it more than once, so here it is.
 
 @examples[#:eval my-eval
 (define tx '(div "Wonderful day" (meta "weather" "good") "for a walk"))
-(define is-meta? (λ(x) (and (txexpr? x) (equal? 'meta (get-tag x)))))
+(define is-meta? (λ (x) (and (txexpr? x) (equal? 'meta (get-tag x)))))
 (splitf-txexpr tx is-meta?)
 ]
 
@@ -470,8 +470,8 @@ Ordinarily, the result of the split operation is to remove the elements that mat
 
 @examples[#:eval my-eval
 (define tx '(div "Wonderful day" (meta "weather" "good") "for a walk"))
-(define is-meta? (λ(x) (and (txexpr? x) (equal? 'meta (get-tag x)))))
-(define replace-meta (λ(x) '(em "meta was here")))
+(define is-meta? (λ (x) (and (txexpr? x) (equal? 'meta (get-tag x)))))
+(define replace-meta (λ (x) '(em "meta was here")))
 (splitf-txexpr tx is-meta? replace-meta)
 ]
 
@@ -496,10 +496,10 @@ Like @racket[splitf-txexpr], but only retrieve the elements that match @racket[_
 @examples[#:eval my-eval
 (define tx '(div "Wonderful day" (meta "weather" "good")
                  "for a walk" (meta "dog" "Roxy")))
-(define is-meta? (λ(x) (and (txexpr? x) (eq? 'meta (get-tag x)))))
+(define is-meta? (λ (x) (and (txexpr? x) (eq? 'meta (get-tag x)))))
 (findf*-txexpr tx is-meta?)
 (findf-txexpr tx is-meta?)
-(define is-zimzam? (λ(x) (and (txexpr? x) (eq? 'zimzam (get-tag x)))))
+(define is-zimzam? (λ (x) (and (txexpr? x) (eq? 'zimzam (get-tag x)))))
 (findf*-txexpr tx is-zimzam?)
 (findf-txexpr tx is-zimzam?)
 ]

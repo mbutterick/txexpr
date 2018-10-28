@@ -10,8 +10,8 @@
   ;; so the whole attr is converted into a single string for sorting, which lets the attr value act as a tiebreaker.
   ;; it doesn't matter that this sort may not be correct (in the sense of a desirable ordering)
   ;; it just needs to be stable (e.g., a certain set of attrs will always sort the same way)
-  (letrec ([stringify-attr (λ(attr) (string-append (symbol->string (car attr)) (cadr attr)))]
-           [sort-attrs (λ(x)
+  (letrec ([stringify-attr (λ (attr) (string-append (symbol->string (car attr)) (cadr attr)))]
+           [sort-attrs (λ (x)
                          (if (txexpr? x)
                              (let-values ([(tag attr elements) (txexpr->values x)])
                                (txexpr tag (sort attr #:key stringify-attr #:cache-keys? #t string<?) (map sort-attrs elements)))

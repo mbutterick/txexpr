@@ -189,7 +189,7 @@
  (check-txexprs-equal? (remove-attrs '(p ((foo "bar")) "hi" (p ((foo "bar")) "hi"))) '(p "hi" (p "hi")))
  
  
- (check-txexprs-equal? (map-elements (λ(x) (if (string? x) "boing" x))  
+ (check-txexprs-equal? (map-elements (λ (x) (if (string? x) "boing" x))  
                                      '(p ((id "zam")) "foo" "bar" (em "square"))) 
                        '(p ((id "zam")) "boing" "boing" (em "boing")))
  
@@ -201,15 +201,15 @@
  
  (define split-this-tx '(root (meta "foo" "bar") "hello" "world" (meta "foo2" "bar2") 
                               (em "goodnight" "moon" (meta "foo3" "bar3"))))
- (define split-predicate (λ(x) (and (txexpr? x) (eq? 'meta (get-tag x)))))
- (check-txexprs-equal? (call-with-values (λ() (splitf-txexpr split-this-tx split-predicate)) list) 
+ (define split-predicate (λ (x) (and (txexpr? x) (eq? 'meta (get-tag x)))))
+ (check-txexprs-equal? (call-with-values (λ () (splitf-txexpr split-this-tx split-predicate)) list) 
                        (list '(root "hello" "world" (em "goodnight" "moon")) '((meta "foo" "bar") (meta "foo2" "bar2") (meta "foo3" "bar3"))))
  
- (define split-proc (λ(x) '(div "foo")))
- (check-txexprs-equal? (call-with-values (λ() (splitf-txexpr split-this-tx split-predicate split-proc)) list) 
+ (define split-proc (λ (x) '(div "foo")))
+ (check-txexprs-equal? (call-with-values (λ () (splitf-txexpr split-this-tx split-predicate split-proc)) list) 
                        (list '(root (div "foo") "hello" "world" (div "foo") (em "goodnight" "moon" (div "foo"))) '((meta "foo" "bar") (meta "foo2" "bar2") (meta "foo3" "bar3"))))
  
- (define false-pred (λ(x) (and (txexpr? x) (eq? 'nonexistent-tag (get-tag x)))))
+ (define false-pred (λ (x) (and (txexpr? x) (eq? 'nonexistent-tag (get-tag x)))))
  (check-equal? (findf*-txexpr split-this-tx split-predicate) '((meta "foo" "bar") (meta "foo2" "bar2") (meta "foo3" "bar3")))
  (check-false (findf*-txexpr split-this-tx false-pred))
  (check-equal? (findf-txexpr split-this-tx split-predicate) '(meta "foo" "bar"))
