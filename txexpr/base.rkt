@@ -1,7 +1,11 @@
 #lang racket/base
-(require racket/match racket/function racket/format sugar/define sugar/list sugar/coerce racket/string racket/list xml)
+(require racket/match sugar/define sugar/list sugar/coerce racket/string racket/list xml)
 (provide cdata? cdata valid-char? xexpr->string xexpr?) ; from xml
 (provide empty) ; from racket/list
+
+(define ((disjoin . funcs) x)
+  (for/or ([func (in-list funcs)])
+          (func x)))
 
 ;; Section 2.2 of XML 1.1
 ;; (XML 1.0 is slightly different and more restrictive)
