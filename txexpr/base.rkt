@@ -254,7 +254,7 @@
   (define matches null)
   (define (extract! x)
     (match x
-      [(? pred) ;; store matched item and return processed value
+      [(? pred)
        (set! matches (cons x matches))
        (proc x)]
       [(? txexpr?) (let-values ([(tag attrs elements) (txexpr->values x)]) 
@@ -266,20 +266,22 @@
 
 (define+provide+safe (findf*-txexpr tx pred)
   (txexpr? procedure? . -> . (or/c #f txexpr-elements?))
-  (define-values (_ matches) (splitf-txexpr tx pred))
-  (and (pair? matches) matches))
+  (match/values (splitf-txexpr tx pred)
+                [(_ (? pair? matches)) matches]
+                [(_ _) #false]))
 
 (define+provide+safe (findf-txexpr tx pred)
   (txexpr? procedure? . -> . (or/c #f txexpr-element?))
-  (define matches (findf*-txexpr tx pred))
-  (and matches (car matches)))
+  (match (findf*-txexpr tx pred)
+    [(cons match _) match]
+    [_ #false]))
 
 ;; don't use "![CDATA[...]]" wrapper in HTML, it's not consistent with the spec
 (define (->cdata x) (if (string? x) (cdata #f #f x) x))
 
 ;; but treat CDATA strings correctly anyhow, because that's friendly
 (define (cdata-string? x)
-  (and (string? x) (regexp-match #rx"^<!\\[CDATA\\[.*\\]\\]>$" x) #t))
+  (and (string? x) (regexp-match #rx"^<!\\[CDATA\\[.*\\]\\]>$" x) #true))
 
 (define+provide+safe (xexpr->html x)
   (xexpr? . -> . string?)
@@ -287,11 +289,9 @@
    (let loop ([x x])
      (match x
        [(? txexpr?)
-        (let*-values ([(tag attrs elements) (txexpr->values x)]
-                      [(proc) (if (memq tag '(script style))
-                                  ->cdata
-                                  loop)])
-          ;; a little faster than `txexpr` since we know the pieces are valid
-          (txexpr-unsafe tag attrs (map proc elements)))]
+        (define-values (tag attrs elements) (txexpr->values x))
+        (define proc (if (memq tag '(script style)) ->cdata loop))
+        ;; a little faster than `txexpr` since we know the pieces are valid
+        (txexpr-unsafe tag attrs (map proc elements))]
        [(? cdata-string?) (->cdata x)]
        [_ x]))))
