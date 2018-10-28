@@ -1,13 +1,13 @@
 #lang racket/base
 
-(define-syntax-rule (r+p modname ...)
+(define-syntax-rule (r+p MODNAME ...)
   (begin
     (begin
-      (require modname)
-      (provide (all-from-out modname))
+      (require MODNAME)
+      (provide (all-from-out MODNAME))
       (module+ safe
-        (require (submod modname safe))
-        (provide (all-from-out (submod modname safe))))) ...))
+        (require (submod MODNAME safe))
+        (provide (all-from-out (submod MODNAME safe))))) ...))
 
 (r+p "base.rkt"
      "stx.rkt"
