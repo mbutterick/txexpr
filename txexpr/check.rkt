@@ -1,5 +1,16 @@
 #lang racket/base
-(require sugar/define "base.rkt" rackunit)
+(require sugar/define racket/match "base.rkt" rackunit)
+
+(define (stringify-attr attr)
+  (match attr
+    [(list key val) (string-append (symbol->string key) val)]))
+
+(define (sort-attrs x)
+  (match x
+    [(? txexpr?)
+     (let-values ([(tag attr elements) (txexpr->values x)])
+       (txexpr tag (sort attr #:key stringify-attr #:cache-keys? #t string<?) (map sort-attrs elements)))]
+    [_ x]))
 
 (define (txexprs-equal? tx1 tx2)
   ;; txexprs are deemed equal if they differ only in the ordering of attributes.
@@ -10,21 +21,11 @@
   ;; so the whole attr is converted into a single string for sorting, which lets the attr value act as a tiebreaker.
   ;; it doesn't matter that this sort may not be correct (in the sense of a desirable ordering)
   ;; it just needs to be stable (e.g., a certain set of attrs will always sort the same way)
-  (letrec ([stringify-attr (λ (attr) (string-append (symbol->string (car attr)) (cadr attr)))]
-           [sort-attrs (λ (x)
-                         (if (txexpr? x)
-                             (let-values ([(tag attr elements) (txexpr->values x)])
-                               (txexpr tag (sort attr #:key stringify-attr #:cache-keys? #t string<?) (map sort-attrs elements)))
-                             x))])
-    (equal? (sort-attrs tx1) (sort-attrs tx2))))
-
+  (equal? (sort-attrs tx1) (sort-attrs tx2)))
 
 (define+provide+safe (attrs-equal? x1 x2)
   ((or/c txexpr-attrs? txexpr?) (or/c txexpr-attrs? txexpr?) . -> . boolean?)
-  (define attrs-tx1 (if (txexpr-attrs? x1) x1 (get-attrs x1)))
-  (define attrs-tx2 (if (txexpr-attrs? x2) x2 (get-attrs x2)))
-  (txexprs-equal? `(div ,attrs-tx1) `(div ,attrs-tx2)))
-
+  (apply txexprs-equal? (map (λ (x) `(_ ,(if (txexpr-attrs? x) x (get-attrs x)))) (list x1 x2))))
 
 (provide+safe check-txexprs-equal?)
 (define-simple-check (check-txexprs-equal? tx1 tx2)
