@@ -22,8 +22,12 @@
 (define+provide+safe (txexpr? x [short-only #f])
   predicate/c
   (match x
-    [(list (? txexpr-tag?) (? my-xexpr?) ...) #true]
-    [(list (? txexpr-tag?) (? txexpr-attrs?) (? my-xexpr?) ...) #:when (not short-only) #true]
+    [(cons (? txexpr-tag?) rest)
+     (=> resume)
+     (match rest
+       [(list (? my-xexpr?) ...) #true]
+       [(list (? txexpr-attrs?) (? my-xexpr?) ...) #:when (not short-only) #true]
+       [_ (resume)])]
     [_ #false]))
 
 (define+provide+safe (txexpr-short? x)
