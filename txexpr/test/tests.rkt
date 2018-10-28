@@ -130,8 +130,8 @@
  (check-equal? (attrs->hash '((foo "bar")) '(foo "fraw") 'foo "dog") '#hasheq((foo . "bar")))
  (check-exn exn:fail:contract? (λ _ (attrs->hash 'foo "bar" 'zam)))
  
- (check-equal? (apply set (hash->attrs '#hash((foo . "bar")(hee . "haw"))))
-               (apply set '((foo "bar")(hee "haw"))))
+ (check-equal? (sort (hash->attrs '#hash((foo . "bar")(hee . "haw"))) string<? #:key cadr)
+               (sort '((foo "bar")(hee "haw")) string<? #:key second))
  
  (check-equal? (attr-ref '(p ((foo "bar"))) 'foo) "bar")
  (check-exn exn:fail? (λ _ (attr-ref '(p ((foo "bar"))) 'zam)))
