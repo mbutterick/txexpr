@@ -19,20 +19,21 @@
 (define (my-xexpr? x)
   ((disjoin txexpr? xexpr? my-valid-char?) x))
 
-(define+provide+safe (txexpr? x [short-only #f])
+(define+provide+safe (txexpr? x [allow-long #t])
   predicate/c
   (match x
     [(cons (? txexpr-tag?) rest)
      (=> resume)
-     (match rest
-       [(list (? my-xexpr?) ...) #true]
-       [(list (? txexpr-attrs?) (? my-xexpr?) ...) #:when (not short-only) #true]
-       [_ (resume)])]
+     (let loop ([rest rest])
+       (match rest
+         [(list (? my-xexpr?) ...) #true]
+         [(list (? txexpr-attrs?) elems ...) #:when allow-long (loop elems)]
+         [_ (resume)]))]
     [_ #false]))
 
 (define+provide+safe (txexpr-short? x)
   predicate/c
-  (txexpr? x 'short-only))
+  (txexpr? x #false))
 
 (define+provide+safe (txexpr-tag? x)
   predicate/c
