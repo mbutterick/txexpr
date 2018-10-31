@@ -3,10 +3,6 @@
 (provide cdata? cdata valid-char? xexpr->string xexpr?) ; from xml
 (provide empty) ; from racket/list
 
-(define ((disjoin . funcs) x)
-  (for/or ([func (in-list funcs)])
-          (func x)))
-
 ;; Section 2.2 of XML 1.1
 ;; (XML 1.0 is slightly different and more restrictive)
 ;; make private version of my-valid-char to get consistent results with Racket 6.0
@@ -17,7 +13,7 @@
            (<= #x10000 i #x10FFFF))))
 
 (define (my-xexpr? x)
-  ((disjoin txexpr? xexpr? my-valid-char?) x))
+  (or (my-valid-char? x) (xexpr? x) (txexpr? x)))
 
 (define+provide+safe (txexpr? x [allow-long #t])
   predicate/c
@@ -80,7 +76,10 @@
 
 (define+provide+safe (can-be-txexpr-attrs? x)
   predicate/c
-  ((disjoin txexpr-attr? txexpr-attrs? can-be-txexpr-attr-key? can-be-txexpr-attr-value?) x))
+  (or (can-be-txexpr-attr-key? x)
+      (can-be-txexpr-attr-value? x)
+      (txexpr-attr? x)
+      (txexpr-attrs? x)))
 
 (define (validate-txexpr-attrs x #:context [txexpr-context #f])
   (match x
@@ -92,12 +91,13 @@
 
 
 (define (validate-txexpr-element x #:context [txexpr-context #f])
-  (match x
-    [(? (disjoin string? txexpr? symbol? valid-char? cdata?)) x]
-    [_ (raise-argument-error  'validate-txexpr-element
-                              (string-append
-                               (if txexpr-context (format "in ~v, " txexpr-context) "")
-                               "valid element (= txexpr, string, symbol, XML char, or cdata)") x)]))
+  (unless (or (string? x) (symbol? x) (valid-char? x) (cdata? x) (txexpr? x))
+    (raise-argument-error
+     'validate-txexpr-element
+     (string-append
+      (if txexpr-context (format "in ~v, " txexpr-context) "")
+      "valid element (= txexpr, string, symbol, XML char, or cdata)") x))
+  x)
 
 ;; is it a named x-expression?
 ;; todo: rewrite this recursively so errors can be pinpointed (for debugging)
