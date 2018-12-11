@@ -1,5 +1,9 @@
 #lang racket/base
-(require racket/match sugar/define sugar/list sugar/coerce racket/string racket/list xml)
+(require racket/match sugar/define sugar/list sugar/coerce
+         racket/string racket/list
+         xml
+         "private/define-provide-safe-match.rkt"
+         (for-syntax racket/base syntax/parse))
 (provide cdata? cdata valid-char? xexpr->string xexpr?) ; from xml
 (provide empty) ; from racket/list
 
@@ -124,9 +128,15 @@
     (raise-argument-error func-name "txexpr-elements?" elements))
   (txexpr-unsafe tag attrs elements))
 
-(define+provide+safe (txexpr tag [attrs null] [elements null])
+(define+provide+safe+match (txexpr tag [attrs null] [elements null])
   ((txexpr-tag?) (txexpr-attrs? txexpr-elements?) . ->* . txexpr?)
-  (txexpr-base 'txexpr tag attrs elements))
+  (txexpr-base 'txexpr tag attrs elements)
+  #:match-expander
+  (syntax-parser
+    [(_ tag-pat:expr
+        {~optional attrs-pat:expr #:defaults ([attrs-pat #'_])}
+        {~optional elements-pat:expr #:defaults ([elements-pat #'_])})
+     #'(? txexpr? (app txexpr->values tag-pat attrs-pat elements-pat))]))
 
 (define+provide+safe (txexpr* tag [attrs null] . elements)
   ((txexpr-tag?) (txexpr-attrs?) #:rest txexpr-elements? . ->* . txexpr?)
