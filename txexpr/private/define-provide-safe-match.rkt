@@ -6,7 +6,8 @@
          (for-syntax racket/base
                      racket/syntax
                      syntax/parse
-                     syntax/stx))
+                     syntax/stx
+                     version/utils))
 
 ;; (define+provide+safe+match name-id
 ;;   contract-expr
@@ -50,6 +51,10 @@
        #:with internal-name (generate-temporary #'name)
        #:with contract-name (generate-temporary #'name)
        #:with make-name-match-transformer (generate-temporary #'name)
+       #:with [name-for-blame ...]
+       (cond [(version<=? "6.8" (version)) #'[#:name-for-blame name]]
+             [else                         #'[]])
+
        #'(begin
            (define internal-name (let ([name value]) name))
 
@@ -67,7 +72,7 @@
              (require racket/contract/base)
 
              (define-module-boundary-contract contract-name internal-name contract
-               #:name-for-blame name)
+               name-for-blame ...)
 
              (define-match-expander name
                (make-name-match-transformer (quote-syntax contract-name))
