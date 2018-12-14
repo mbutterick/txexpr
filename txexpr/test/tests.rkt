@@ -108,6 +108,19 @@
                (txexpr->list '(p ((key "value")))))
  (check-equal? (values->list (txexpr->values '(p ((key "value")) "foo"))) 
                (txexpr->list '(p ((key "value")) "foo")))
+
+ ;; testing the match expander success
+ (check-match '(p ((key "value")) "leaf")
+              (txexpr 'p `((key ,val)) (list "leaf"))
+              (string=? val "value"))
+
+ ;; testing the match expander failure
+ (check-false (match '(p ((key "value")) "something")
+                [(txexpr 'p _ (list "else")) #true]
+                [_                           #false]))
+ (check-false (match "foo"
+                [(txexpr _ _ _) #true]
+                [_              #false]))
  
  (check-equal? (get-tag '(p ((key "value"))"foo" "bar" (em "square"))) 'p)
  (check-equal? (get-attrs '(p ((key "value"))"foo" "bar" (em "square"))) '((key "value")))
