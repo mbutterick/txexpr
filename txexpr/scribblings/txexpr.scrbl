@@ -7,7 +7,7 @@
           (for-label racket txexpr txexpr/stx xml rackunit))
 
 @(define my-eval (make-base-eval))
-@(my-eval `(require txexpr xml rackunit))
+@(my-eval `(require racket/match txexpr xml rackunit))
 
 
 @title{txexpr: Tagged X-expressions}
