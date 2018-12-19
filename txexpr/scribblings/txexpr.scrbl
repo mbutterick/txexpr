@@ -229,6 +229,23 @@ Assemble a @racket[_txexpr] from its parts. If you don't have attributes, but yo
 (get-attrs tx) (get-elements tx))
 ]
 
+The @racket[txexpr] form can also be used as a match pattern:
+
+@examples[#:eval my-eval
+(match '(div)
+  [(txexpr tag attrs elems)
+   (values tag attrs elems)])
+(match '(div "Hello" (p "World"))
+  [(txexpr tag attrs elems)
+   (values tag attrs elems)])
+(match '(div "Hello" (p "World"))
+  [(txexpr 'div attrs1 (list elems1 ... (txexpr 'p attrs2 elems2)))
+   (values attrs1 elems1 attrs2 elems2)])
+(match '(div ((id "top")) "Hello" (p "World"))
+  [(txexpr 'div attrs1 (list elems1 ... (txexpr 'p attrs2 elems2)))
+   (values attrs1 elems1 attrs2 elems2)])
+]
+
 @defproc[
 (txexpr*
 [tag txexpr-tag?] 
