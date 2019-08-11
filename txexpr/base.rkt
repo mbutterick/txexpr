@@ -6,6 +6,7 @@
          (for-syntax racket/base syntax/parse))
 (provide cdata? cdata valid-char? xexpr->string xexpr?) ; from xml
 (provide empty) ; from racket/list
+(provide deleted-signal)
 
 ;; Section 2.2 of XML 1.1
 ;; (XML 1.0 is slightly different and more restrictive)

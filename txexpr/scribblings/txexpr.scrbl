@@ -469,12 +469,18 @@ In practice, most @racket[_txexpr-element]s are strings. But it's unwise to pass
 ]
 
 
+@deftogether[(
+
+@defthing[deleted-signal symbol?]
+
 @defproc[
 (splitf-txexpr
 [tx txexpr?]
 [pred procedure?]
-[replace-proc procedure? (λ (x) null)])
+[replace-proc procedure? (λ (x) deleted-signal)])
 (values txexpr? (listof txexpr-element?))]
+
+)]
 Recursively descend through @racket[_txexpr] and extract all elements that match @racket[_pred]. Returns two values: a @racket[_txexpr] with the matching elements removed, and the list of matching elements. Sort of esoteric, but I've needed it more than once, so here it is.
 
 @examples[#:eval my-eval
@@ -483,7 +489,7 @@ Recursively descend through @racket[_txexpr] and extract all elements that match
 (splitf-txexpr tx is-meta?)
 ]
 
-Ordinarily, the result of the split operation is to remove the elements that match @racket[_pred]. But you can change this behavior with the optional @racket[_replace-proc] argument.
+Ordinarily, the result of the split operation is to remove the elements that match @racket[_pred]. This happens only when returning @racket[_deleted-signal]. You can change this behavior with the optional @racket[_replace-proc] argument.
 
 @examples[#:eval my-eval
 (define tx '(div "Wonderful day" (meta "weather" "good") "for a walk"))
