@@ -6,7 +6,6 @@
          (for-syntax racket/base syntax/parse))
 (provide cdata? cdata valid-char? xexpr->string xexpr?) ; from xml
 (provide empty) ; from racket/list
-(provide deleted-signal)
 
 ;; Section 2.2 of XML 1.1
 ;; (XML 1.0 is slightly different and more restrictive)
@@ -262,7 +261,7 @@
               x))))
 
 ;; function to split tag out of txexpr
-(define deleted-signal (gensym))
+(define+provide+safe deleted-signal symbol? (gensym))
 (define+provide+safe (splitf-txexpr tx pred [proc (λ (x) deleted-signal)])
   ((txexpr? procedure?) (procedure?) . ->* . (values txexpr? txexpr-elements?))
   (unless (txexpr? tx)
