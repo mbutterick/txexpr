@@ -261,7 +261,7 @@
               x))))
 
 ;; function to split tag out of txexpr
-(define+provide+safe deleted-signal symbol? (gensym))
+(define deleted-signal #f)
 (define+provide+safe (splitf-txexpr tx pred [proc (λ (x) deleted-signal)])
   ((txexpr? procedure?) (procedure?) . ->* . (values txexpr? txexpr-elements?))
   (unless (txexpr? tx)
