@@ -473,7 +473,7 @@ In practice, most @racket[_txexpr-element]s are strings. But it's unwise to pass
 (splitf-txexpr
 [tx txexpr?]
 [pred procedure?]
-[replace-proc procedure? (λ (x) null)])
+[replace-proc procedure? (λ (x) #f)])
 (values txexpr? (listof txexpr-element?))]
 Recursively descend through @racket[_txexpr] and extract all elements that match @racket[_pred]. Returns two values: a @racket[_txexpr] with the matching elements removed, and the list of matching elements. Sort of esoteric, but I've needed it more than once, so here it is.
 
