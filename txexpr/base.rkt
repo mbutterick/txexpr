@@ -261,8 +261,7 @@
               x))))
 
 ;; function to split tag out of txexpr
-(define deleted-signal #f)
-(define+provide+safe (splitf-txexpr tx pred [proc (λ (x) deleted-signal)])
+(define+provide+safe (splitf-txexpr tx pred [proc (λ (x) #f)])
   ((txexpr? procedure?) (procedure?) . ->* . (values txexpr? txexpr-elements?))
   (unless (txexpr? tx)
     (raise-argument-error 'splitf-txexpr "txexpr?" tx))
@@ -273,8 +272,7 @@
        (set! matches (cons x matches))
        (proc x)]
       [(? txexpr?) (let-values ([(tag attrs elements) (txexpr->values x)]) 
-                     (txexpr-unsafe tag attrs (filter-not (λ (e) (eq? e deleted-signal))
-                                                          (map extract! elements))))]
+                     (txexpr-unsafe tag attrs (filter values (map extract! elements))))]
       [_ x]))
   (define tx-extracted (extract! tx)) ;; do this first to fill matches
   (values tx-extracted (reverse matches)))
