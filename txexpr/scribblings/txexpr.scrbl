@@ -372,19 +372,24 @@ Return @racket[#t] if @racket[_attrs] and @racket[_other-attrs] contain the same
 
 @defproc[
 (attr-ref
-[tx txexpr?]
+[attrs (or/c txexpr-attrs? txexpr?)]
 [key can-be-txexpr-attr-key?]
 [failure-result any/c (λ _ (raise (make-exn:fail:contract ....)))
 ])
 any]
-Given a @racket[_key], return the corresponding @racket[_value] from the attributes of a @racket[_txexpr]. By default, asking for a nonexistent key produces an error. But if a value or procedure is provided as the @racket[_failure-result], evaluate and return that instead.
+Given a @racket[_key], return the corresponding @racket[_value] from @racket[_attrs]. By default, asking for a nonexistent key produces an error. But if a value or procedure is provided as the @racket[_failure-result], evaluate and return that instead.
 
 @examples[#:eval my-eval
+(define tx '(div ((id "top")(class "red")) "Hello" (p "World")))
 (attr-ref tx 'class)
 (attr-ref tx 'id)
 (attr-ref tx 'nonexistent-key)
 (attr-ref tx 'nonexistent-key "forty-two")
 (attr-ref tx 'nonexistent-key (λ _ (* 6 7)))
+(define attrs '((id "top")(class "red")))
+(attr-ref attrs 'class)
+(attr-ref attrs 'id)
+(attr-ref attrs 'nonexistent-key)
 ]
 
 @deftogether[(

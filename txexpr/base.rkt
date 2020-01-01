@@ -235,9 +235,11 @@
   (attr-set tx key (string-join (append starting-values (list value)) " ")))      
 
 (define no-failure-result (gensym)) ; failure-result might be #false
-(define+provide+safe (attr-ref tx key [failure-result no-failure-result])
-  ((txexpr? can-be-txexpr-attr-key?) (any/c) . ->* . any)
-  (match (assq (->txexpr-attr-key key) (get-attrs tx))
+(define+provide+safe (attr-ref attrs-arg key [failure-result no-failure-result])
+  (((or/c txexpr? txexpr-attrs?) can-be-txexpr-attr-key?) (any/c) . ->* . any)
+  (match (assq (->txexpr-attr-key key) (match attrs-arg
+                                         [(? txexpr? tx) (get-attrs tx)]
+                                         [attrs attrs]))
     [(list _ value) value]
     [_ (match failure-result
          [(? procedure?) (failure-result)]
