@@ -1,4 +1,4 @@
-## txexpr [![Build Status](https://travis-ci.org/mbutterick/txexpr.svg)](https://travis-ci.org/mbutterick/txexpr)
+## txexpr ![Build Status](https://github.com/mbutterick/txexpr/workflows/CI/badge.svg)
 
 
 Convenience functions for working with HTML-style tagged X-expressions in Racket 6.0+.
