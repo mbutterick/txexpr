@@ -85,34 +85,41 @@
       (txexpr-attr? x)
       (txexpr-attrs? x)))
 
-(define (validate-txexpr-attrs x #:context [txexpr-context #f])
-  (match x
-    [(list (? txexpr-attr? x) ...) x]
-    [_ (raise-argument-error 'validate-txexpr-attrs
-                             (string-append 
-                              (if txexpr-context (format "in ~v, " txexpr-context) "")
-                              (format "list of attributes, each in the form '(symbol \"string\")")) x)]))
+(define (validate-txexpr-attrs tx)
+  (andmap
+   (lambda (attr)
+     (unless (and (list? attr) (eq? 2 (length attr)))
+       (txexpr-error "attribute" "is not a list of the form '(symbol \"string\")" attr tx))
+     (unless (symbol? (first attr))
+       (txexpr-error "attribute key" "is not a symbol" (first attr) tx))
+     (unless (string? (second attr))
+       (txexpr-error "attribute value" "is not a string" (second attr) tx))
+     #t)
+   (second tx)))
 
-
-(define (validate-txexpr-element x #:context [txexpr-context #f])
-  (unless (or (string? x) (symbol? x) (valid-char? x) (cdata? x) (txexpr? x))
-    (raise-argument-error
-     'validate-txexpr-element
-     (string-append
-      (if txexpr-context (format "in ~v, " txexpr-context) "")
-      "valid element (= txexpr, string, symbol, XML char, or cdata)") x))
-  x)
+(define (validate-txexpr-elements elems tx)
+  (andmap
+   (lambda (e)
+     (cond
+       [(or (string? e) (symbol? e) (my-valid-char? e) (cdata? e)) #t]
+       [(and (list? e) (symbol? (first e)))
+        (validate-txexpr e)]
+       [else (txexpr-error "element" "not a valid element (= txexpr, string, symbol, XML char, or cdata)" e tx)]))
+   elems))
+  
+(define (txexpr-error noun has-problem bad tx)
+  (raise-arguments-error 'validate-txexpr (format "~a ~a" noun has-problem) noun bad "in" tx))
 
 ;; is it a named x-expression?
-;; todo: rewrite this recursively so errors can be pinpointed (for debugging)
+;; Restricting to primitive predicates allows for more specific (helpful) errors
 (define+provide+safe (validate-txexpr x)
   (any/c . -> . txexpr?)
-  (match x
-    [(cons (? txexpr-tag?) _)
-     (and
-      (validate-txexpr-attrs (get-attrs x) #:context x)
-      (andmap (λ (e) (validate-txexpr-element e #:context x)) (get-elements x)) x)]
-    [_ (raise-argument-error 'validate-txexpr "valid X-expression" x)]))
+  (unless (list? x) (raise-argument-error 'validate-txexpr "tagged X-expression" x))
+  (unless (symbol? (car x)) (txexpr-error "tag" "must be a symbol" (car x) x))
+  (match (rest x)
+    [(list-rest (list (? list?) attrs ...) elems)
+     (and (validate-txexpr-attrs x) (validate-txexpr-elements elems x) x)]
+    [(? list? elems) (and (validate-txexpr-elements elems x) x)]))
 
 (define (txexpr-unsafe tag attrs elements)
   (cons tag (match attrs
