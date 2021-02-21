@@ -195,7 +195,7 @@ Predicate for functions that handle @racket[_txexpr-attrs]. Covers values that a
 (validate-txexpr
 [possible-txexpr any/c])
 txexpr?]
-Like @racket[txexpr?], but raise a descriptive error if @racket[_possible-txexpr] is invalid, and otherwise return @racket[_possible-txexpr] itself.
+Like @racket[txexpr?], but raise a descriptive error pinpointing the first problem encountered if @racket[_possible-txexpr] is invalid, and otherwise return @racket[_possible-txexpr] itself.
 
 @examples[#:eval my-eval
 (validate-txexpr 'root)
@@ -204,6 +204,8 @@ Like @racket[txexpr?], but raise a descriptive error if @racket[_possible-txexpr
 (validate-txexpr '(root ((id "top")(class "42"))))
 (validate-txexpr '(root ((id "top")(class "42")) ("hi")))
 (validate-txexpr '(root ((id "top")(class "42")) "hi"))
+(validate-txexpr '(root (p "Hello " (span [[class "inner"]] (1 2 3)))))
+(validate-txexpr `(root (p "Look out" (span ,(void)) (1 2 3))))
 ]
 
 

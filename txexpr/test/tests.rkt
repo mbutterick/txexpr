@@ -71,7 +71,79 @@
  (check-exn exn:fail? (λ _ (validate-txexpr '(p "foo" "bar" ((key "value")))))) ; malformed
  (check-exn exn:fail? (λ _ (validate-txexpr '("p" "foo" "bar")))) ; no name
  (check-exn exn:fail? (λ _ (validate-txexpr '(root ((id "top")(class 42)))))) ; malformed attrs
+ (check-exn exn:fail? (λ _ (validate-txexpr `(root  ,(void))))) ; invalid element type
+
+ (define-syntax (check-validate-exn-msg stx)
+   (syntax-case stx ()
+     [(_ tx) (syntax/loc stx (check-validate-exn-msg tx ""))]
+     [(_ tx msg) 
+      (syntax/loc stx
+        (check-equal? (with-handlers ([exn:fail:contract? (λ (e) (exn-message e))])
+                                      (validate-txexpr tx)) msg))]))
+ ;; Root element not a list
+ (check-validate-exn-msg
+  "foo"
+  "validate-txexpr: contract violation\n  expected: tagged X-expression\n  given: \"foo\"")
+
+ ;; No name
+ (check-validate-exn-msg
+  '("p" "foo" "bar")
+  "validate-txexpr: tag must be a symbol\n  tag: \"p\"\n  in: '(\"p\" \"foo\" \"bar\")")
+
+ ;; Invalid element
+ (check-validate-exn-msg
+  '(p "foo" "bar" ((key "value")))
+  "validate-txexpr: element not a valid element (= txexpr, string, symbol, XML char, or cdata)\n  element: '((key \"value\"))\n  in: '(p \"foo\" \"bar\" ((key \"value\")))")
+
+ ;; Malformed attribute list
+ (check-validate-exn-msg
+  '(p ((key "val") "foo" "bar") "hi")
+  "validate-txexpr: attribute is not a list of the form '(symbol \"string\")\n  attribute: \"foo\"\n  in: '(p ((key \"val\") \"foo\" \"bar\") \"hi\")")
  
+ ;; Invalid attribute key
+ (check-validate-exn-msg
+  '(root ((id "top") (class 42)))
+  "validate-txexpr: attribute value is not a string\n  attribute value: 42\n  in: '(root ((id \"top\") (class 42)))")
+
+ ;; Invalid attribute value
+ (check-validate-exn-msg
+  '(root ((id "top") ("class" 42)))
+  "validate-txexpr: attribute key is not a symbol\n  attribute key: \"class\"\n  in: '(root ((id \"top\") (\"class\" 42)))")
+
+ ;; Invalid element type
+ (check-validate-exn-msg
+  `(root ,(void))
+  "validate-txexpr: element not a valid element (= txexpr, string, symbol, XML char, or cdata)\n  element: #<void>\n  in: '(root #<void>)")
+
+ ;; (Deeply nested) No name: error should pinpoint element in 'div txexpr 
+ (check-validate-exn-msg
+  '(fine-outer [[type "valid"]] (div (br) ("p" "foo" "bar")))
+  "validate-txexpr: element not a valid element (= txexpr, string, symbol, XML char, or cdata)\n  element: '(\"p\" \"foo\" \"bar\")\n  in: '(div (br) (\"p\" \"foo\" \"bar\"))")
+
+ ;; (Deeply nested) Invalid element: error should pinpoint element in 'p txexpr
+ (check-validate-exn-msg
+  '(fine-outer [[type "valid"]] (div (br) (p "foo" "bar" ((key "value")))))
+  "validate-txexpr: element not a valid element (= txexpr, string, symbol, XML char, or cdata)\n  element: '((key \"value\"))\n  in: '(p \"foo\" \"bar\" ((key \"value\")))")
+
+ ;; (Deeply nested) Malformed attribute list: error should pinpoint attr in 'p txexpr
+ (check-validate-exn-msg
+  '(fine-outer [[type "valid"]] (div (br) (p ((key "val") "foo" "bar") "hi")))
+  "validate-txexpr: attribute is not a list of the form '(symbol \"string\")\n  attribute: \"foo\"\n  in: '(p ((key \"val\") \"foo\" \"bar\") \"hi\")")
+ 
+ ;; (Deeply nested) Invalid attribute key: error should pinpoint attr key in 'p txexpr
+ (check-validate-exn-msg
+  '(fine-outer [[type "valid"]] (div (br) (p ((id "top") (class 42)))))
+  "validate-txexpr: attribute value is not a string\n  attribute value: 42\n  in: '(p ((id \"top\") (class 42)))")
+
+ ;; (Deeply nested) Invalid attribute value: error should pinpoint attr val in 'p txexpr
+ (check-validate-exn-msg
+  '(fine-outer [[type "valid"]] (div (br) (p ((id "top") ("class" 42)))))
+  "validate-txexpr: attribute key is not a symbol\n  attribute key: \"class\"\n  in: '(p ((id \"top\") (\"class\" 42)))")
+
+ ;; (Deeply nested) Invalid element type: error should pinpoint element in 'p txexpr
+ (check-validate-exn-msg
+  `(fine-outer [[type "valid"]] (div (br) (p ,(void))))
+  "validate-txexpr: element not a valid element (= txexpr, string, symbol, XML char, or cdata)\n  element: #<void>\n  in: '(p #<void>)")
  
  (check-txexprs-equal? (make-txexpr 'p) '(p))
  (check-txexprs-equal? (make-txexpr 'p '((key "value"))) '(p ((key "value"))))
