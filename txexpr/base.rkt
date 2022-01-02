@@ -115,11 +115,12 @@
 (define+provide+safe (validate-txexpr x)
   (any/c . -> . txexpr?)
   (unless (list? x) (raise-argument-error 'validate-txexpr "tagged X-expression" x))
-  (unless (symbol? (car x)) (txexpr-error "tag" "must be a symbol" (car x) x))
-  (match (rest x)
-    [(list-rest (list (? list?) attrs ...) elems)
+  (match x
+    [(list* tag _) #:when (not (symbol? tag))
+                   (txexpr-error "tag" "must be a symbol" tag x)]
+    [(list* tag (or (? null?) (list (? list?) _ ...)) elems)
      (and (validate-txexpr-attrs x) (validate-txexpr-elements elems x) x)]
-    [(? list? elems) (and (validate-txexpr-elements elems x) x)]))
+    [(list* tag elems) (and (validate-txexpr-elements elems x) x)]))
 
 (define (txexpr-unsafe tag attrs elements)
   (cons tag (match attrs

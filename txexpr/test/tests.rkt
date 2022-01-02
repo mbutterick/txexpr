@@ -66,6 +66,7 @@
  (check-not-exn (λ _ (validate-txexpr '(p))))
  (check-not-exn (λ _ (validate-txexpr '(p "foo" "bar"))))
  (check-not-exn (λ _ (validate-txexpr '(p ((key "value")) "foo" "bar"))))
+ (check-not-exn (λ _ (validate-txexpr '(p () "foo" "bar"))))
  (check-not-exn (λ _ (validate-txexpr '(p 123)))) ; content is a valid-char
  (check-exn exn:fail? (λ _ (validate-txexpr "foo"))) ; not a list with symbol
  (check-exn exn:fail? (λ _ (validate-txexpr '(p "foo" "bar" ((key "value")))))) ; malformed
