@@ -4,7 +4,7 @@
          xml
          "private/define-provide-safe-match.rkt"
          (for-syntax racket/base syntax/parse))
-(provide cdata? cdata valid-char? xexpr->string xexpr?) ; from xml
+(provide cdata? cdata valid-char? xexpr->string xexpr? comment comment?) ; from xml
 (provide empty) ; from racket/list
 
 ;; Section 2.2 of XML 1.1
@@ -101,10 +101,10 @@
   (andmap
    (lambda (e)
      (cond
-       [(or (string? e) (symbol? e) (my-valid-char? e) (cdata? e)) #t]
+       [(or (string? e) (symbol? e) (my-valid-char? e) (cdata? e) (comment? e)) #t]
        [(and (list? e) (symbol? (first e)))
         (validate-txexpr e)]
-       [else (txexpr-error "element" "not a valid element (= txexpr, string, symbol, XML char, or cdata)" e tx)]))
+       [else (txexpr-error "element" "not a valid element (= txexpr, string, symbol, XML char, cdata, or comment)" e tx)]))
    elems))
   
 (define (txexpr-error noun has-problem bad tx)
@@ -306,15 +306,23 @@
 (define (cdata-string? x)
   (and (string? x) (regexp-match #rx"^<!\\[CDATA\\[.*\\]\\]>$" x) #true))
 
+(define comment-pattern #rx"^<!--(.*?)-->$")
+
+(define (string->comment x)
+  (match (regexp-match comment-pattern x)
+    [(list _ comment-payload) (comment comment-payload)]
+    [_ #false]))
+
 (define+provide+safe (xexpr->html x)
   (xexpr? . -> . string?)
   (xexpr->string
    (let loop ([x x])
-     (match x
-       [(? txexpr?)
+     (cond
+       [(txexpr? x)
         (define-values (tag attrs elements) (txexpr->values x))
         (define proc (if (memq tag '(script style)) ->cdata loop))
         ;; a little faster than `txexpr` since we know the pieces are valid
         (txexpr-unsafe tag attrs (map proc elements))]
-       [(? cdata-string?) (->cdata x)]
-       [_ x]))))
+       [(cdata-string? x) (->cdata x)]
+       [(and (string? x) (string->comment x))]
+       [else x]))))

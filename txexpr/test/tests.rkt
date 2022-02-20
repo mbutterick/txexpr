@@ -94,7 +94,7 @@
  ;; Invalid element
  (check-validate-exn-msg
   '(p "foo" "bar" ((key "value")))
-  "validate-txexpr: element not a valid element (= txexpr, string, symbol, XML char, or cdata)\n  element: '((key \"value\"))\n  in: '(p \"foo\" \"bar\" ((key \"value\")))")
+  "validate-txexpr: element not a valid element (= txexpr, string, symbol, XML char, cdata, or comment)\n  element: '((key \"value\"))\n  in: '(p \"foo\" \"bar\" ((key \"value\")))")
 
  ;; Malformed attribute list
  (check-validate-exn-msg
@@ -114,17 +114,17 @@
  ;; Invalid element type
  (check-validate-exn-msg
   `(root ,(void))
-  "validate-txexpr: element not a valid element (= txexpr, string, symbol, XML char, or cdata)\n  element: #<void>\n  in: '(root #<void>)")
+  "validate-txexpr: element not a valid element (= txexpr, string, symbol, XML char, cdata, or comment)\n  element: #<void>\n  in: '(root #<void>)")
 
  ;; (Deeply nested) No name: error should pinpoint element in 'div txexpr 
  (check-validate-exn-msg
   '(fine-outer [[type "valid"]] (div (br) ("p" "foo" "bar")))
-  "validate-txexpr: element not a valid element (= txexpr, string, symbol, XML char, or cdata)\n  element: '(\"p\" \"foo\" \"bar\")\n  in: '(div (br) (\"p\" \"foo\" \"bar\"))")
+  "validate-txexpr: element not a valid element (= txexpr, string, symbol, XML char, cdata, or comment)\n  element: '(\"p\" \"foo\" \"bar\")\n  in: '(div (br) (\"p\" \"foo\" \"bar\"))")
 
  ;; (Deeply nested) Invalid element: error should pinpoint element in 'p txexpr
  (check-validate-exn-msg
   '(fine-outer [[type "valid"]] (div (br) (p "foo" "bar" ((key "value")))))
-  "validate-txexpr: element not a valid element (= txexpr, string, symbol, XML char, or cdata)\n  element: '((key \"value\"))\n  in: '(p \"foo\" \"bar\" ((key \"value\")))")
+  "validate-txexpr: element not a valid element (= txexpr, string, symbol, XML char, cdata, or comment)\n  element: '((key \"value\"))\n  in: '(p \"foo\" \"bar\" ((key \"value\")))")
 
  ;; (Deeply nested) Malformed attribute list: error should pinpoint attr in 'p txexpr
  (check-validate-exn-msg
@@ -144,7 +144,7 @@
  ;; (Deeply nested) Invalid element type: error should pinpoint element in 'p txexpr
  (check-validate-exn-msg
   `(fine-outer [[type "valid"]] (div (br) (p ,(void))))
-  "validate-txexpr: element not a valid element (= txexpr, string, symbol, XML char, or cdata)\n  element: #<void>\n  in: '(p #<void>)")
+  "validate-txexpr: element not a valid element (= txexpr, string, symbol, XML char, cdata, or comment)\n  element: #<void>\n  in: '(p #<void>)")
  
  (check-txexprs-equal? (make-txexpr 'p) '(p))
  (check-txexprs-equal? (make-txexpr 'p '((key "value"))) '(p ((key "value"))))
@@ -309,4 +309,16 @@
                "<root><script>3 > 2</script>Why is 3 &gt; 2?</root>")
 
  (check-equal? (xexpr->html '(root (div "<![CDATA[3 > 2]]>") "Why is 3 > 2?"))
-               "<root><div><![CDATA[3 > 2]]></div>Why is 3 &gt; 2?</root>"))
+               "<root><div><![CDATA[3 > 2]]></div>Why is 3 &gt; 2?</root>")
+ 
+ ;; comment
+ (check-equal? (xexpr->html '(root "<!-- comment -->" "Why is 3 > 2?"))
+               "<root><!-- comment -->Why is 3 &gt; 2?</root>")
+
+  ;; malformed comment: merged with next string
+ (check-equal? (xexpr->html '(root "<!-- comment -->Why is 3 > 2?"))
+               "<root>&lt;!-- comment --&gt;Why is 3 &gt; 2?</root>")
+
+ ;; malformed comment: missing double hyphen at end
+ (check-equal? (xexpr->html '(root "<!-- comment ->" "Why is 3 > 2?"))
+               "<root>&lt;!-- comment -&gt;Why is 3 &gt; 2?</root>"))
